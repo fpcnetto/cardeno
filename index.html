@@ -1,0 +1,2373 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Caderno de Ferro</title>
+<meta name="theme-color" content="#17767E">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Caderno de Ferro">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+  :root{
+    --ground:#F2F4F6; --surface:#FFFFFF; --surface2:#E9EDF1; --line:#D3DAE1;
+    --ink:#12161A; --ink2:#3B444E; --muted:#66727E;
+    --accent:#17767E; --accent-ink:#FFFFFF; --accent-soft:#D6EDEE;
+    --ok:#2F7D53; --ok-soft:#DCEFE3;
+    --warn:#9A6B10; --warn-soft:#F6EBD4;
+    --stop:#B5301F; --stop-soft:#F8DFDA;
+    --shadow:0 1px 2px rgba(18,22,26,.08), 0 8px 24px rgba(18,22,26,.06);
+    --r:14px;
+    --font-d:"Oswald", "Arial Narrow", system-ui, sans-serif;
+    --font-b:"IBM Plex Sans", system-ui, -apple-system, sans-serif;
+    --font-m:"IBM Plex Mono", ui-monospace, "Courier New", monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#0E1114; --surface:#171B20; --surface2:#20262D; --line:#2C333B;
+      --ink:#ECF0F4; --ink2:#BCC5CE; --muted:#8A95A1;
+      --accent:#48B0B8; --accent-ink:#06171A; --accent-soft:#12343A;
+      --ok:#5CBE87; --ok-soft:#14301F;
+      --warn:#DCA33C; --warn-soft:#32260F;
+      --stop:#E86552; --stop-soft:#3A1912;
+      --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#0E1114; --surface:#171B20; --surface2:#20262D; --line:#2C333B;
+    --ink:#ECF0F4; --ink2:#BCC5CE; --muted:#8A95A1;
+    --accent:#48B0B8; --accent-ink:#06171A; --accent-soft:#12343A;
+    --ok:#5CBE87; --ok-soft:#14301F;
+    --warn:#DCA33C; --warn-soft:#32260F;
+    --stop:#E86552; --stop-soft:#3A1912;
+    --shadow:0 1px 2px rgba(0,0,0,.5), 0 8px 24px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-padding-top:env(safe-area-inset-top,0px)}
+  body{
+    margin:0; background:var(--ground); color:var(--ink);
+    font-family:var(--font-b); font-size:16px; line-height:1.5;
+    -webkit-text-size-adjust:100%;
+    padding-top:env(safe-area-inset-top,0px);
+  }
+  [hidden]{display:none!important}
+  .wrap{max-width:560px; margin:0 auto; padding-inline:16px; padding-block:0 132px}
+  h1,h2,h3{margin:0; text-wrap:balance}
+  button{font-family:inherit; font-size:inherit; color:inherit; cursor:pointer}
+  :focus-visible{outline:3px solid var(--accent); outline-offset:2px; border-radius:6px}
+  @media (prefers-reduced-motion:reduce){*{animation:none!important; transition:none!important}}
+
+  /* ---------- topo ---------- */
+  header.top{
+    position:sticky; top:0; z-index:40;
+    background:var(--ground); border-bottom:1px solid var(--line);
+    padding:10px 16px 8px;
+  }
+  .top-inner{max-width:560px; margin:0 auto; display:flex; align-items:center; gap:12px}
+  .brand{font-family:var(--font-d); font-weight:600; font-size:19px; letter-spacing:.02em; line-height:1.1}
+  .brand small{display:block; font-family:var(--font-b); font-weight:400; font-size:11px;
+    letter-spacing:.09em; text-transform:uppercase; color:var(--muted); margin-top:2px}
+  .top-actions{margin-left:auto; display:flex; gap:8px}
+  .icon-btn{
+    background:var(--surface); border:1px solid var(--line); border-radius:10px;
+    min-width:44px; height:40px; padding:0 10px; font-size:12px; font-weight:600;
+    letter-spacing:.06em; text-transform:uppercase; color:var(--ink2);
+  }
+  .icon-btn[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+
+  /* ---------- seletor de sessão ---------- */
+  .picker{display:grid; grid-template-columns:repeat(5,1fr); gap:5px; margin:14px 0 4px}
+  .picker button{
+    background:var(--surface); border:1px solid var(--line); border-radius:11px;
+    padding:9px 2px 8px; text-align:center; min-height:58px;
+  }
+  .picker button .k{font-family:var(--font-d); font-size:19px; font-weight:600; display:block; line-height:1}
+  .picker button .d{font-size:9px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-top:4px; display:block}
+  .picker button[aria-pressed="true"]{background:var(--accent); border-color:var(--accent); color:var(--accent-ink)}
+  .picker button[aria-pressed="true"] .d{color:var(--accent-ink); opacity:.8}
+  .picker button.feita{border-color:var(--ok)}
+  .picker button.feita .d{color:var(--ok)}
+  .picker button.feita[aria-pressed="true"] .d{color:var(--accent-ink)}
+  .picker button.hoje .k::after{content:"·"; color:var(--accent); margin-left:3px}
+  .picker button.hoje[aria-pressed="true"] .k::after{color:var(--accent-ink)}
+  .picker button.comp{border-style:dashed}
+  .picker-nota{margin:7px 0 0; font-size:12px; line-height:1.4; color:var(--muted)}
+
+  /* ---------- cabeçalho da sessão ---------- */
+  .sess-head{margin:14px 0 6px}
+  .sess-head h1{font-family:var(--font-d); font-size:30px; font-weight:600; letter-spacing:.01em; line-height:1.05}
+  .sess-head .grupos{color:var(--muted); font-size:13.5px; margin-top:4px}
+  .meta-row{display:flex; flex-wrap:wrap; gap:6px; margin-top:10px}
+  .chip{
+    max-width:100%; white-space:normal;
+    font-family:var(--font-m); font-size:11.5px; font-weight:500; letter-spacing:.02em;
+    background:var(--surface2); border:1px solid var(--line); color:var(--ink2);
+    padding:4px 9px; border-radius:999px;
+  }
+  .chip.on{background:var(--accent-soft); border-color:var(--accent); color:var(--accent)}
+  .chip.warn{background:var(--warn-soft); border-color:var(--warn); color:var(--warn)}
+
+  .bar{height:6px; background:var(--surface2); border-radius:999px; overflow:hidden; margin-top:12px; border:1px solid var(--line)}
+  .bar i{display:block; height:100%; background:var(--accent); width:0%; transition:width .28s ease}
+
+  /* ---------- aviso da semana ---------- */
+  .banner{
+    margin-top:14px; border-radius:var(--r); padding:12px 14px;
+    background:var(--warn-soft); border:1px solid var(--warn); color:var(--ink);
+  }
+  .banner b{font-family:var(--font-d); font-weight:600; letter-spacing:.03em; text-transform:uppercase; font-size:12.5px; color:var(--warn); display:block; margin-bottom:3px}
+  .banner p{margin:0; font-size:13.5px; line-height:1.45}
+
+  /* ---------- exercício ---------- */
+  .list{display:flex; flex-direction:column; gap:10px; margin-top:16px}
+  .ex{background:var(--surface); border:1px solid var(--line); border-radius:var(--r); overflow:hidden; box-shadow:var(--shadow)}
+  .ex.done{box-shadow:none; background:var(--surface2)}
+  .ex.skip{box-shadow:none; background:var(--surface2); opacity:.9}
+  .ex-head{display:flex; align-items:flex-start; gap:11px; width:100%; background:none; border:0; padding:13px 14px; text-align:left}
+  .num{
+    flex:0 0 auto; width:28px; height:28px; border-radius:8px; margin-top:1px;
+    display:grid; place-items:center; font-family:var(--font-m); font-size:12.5px; font-weight:600;
+    background:var(--surface2); color:var(--muted); border:1px solid var(--line);
+  }
+  .ex.active .num{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  .ex.done .num{background:var(--ok-soft); color:var(--ok); border-color:var(--ok)}
+  .ex.skip .num{background:var(--stop-soft); color:var(--stop); border-color:var(--stop)}
+  .ex-title{flex:1 1 auto; min-width:0}
+  .ex-title .n{font-weight:600; font-size:15.5px; line-height:1.28; display:block}
+  .ex-title .ap{display:block; font-size:12px; color:var(--muted); margin-top:2px}
+  .ex-title .rec{display:block; font-family:var(--font-m); font-size:12.5px; color:var(--ok); margin-top:5px; font-weight:500}
+  .ex.skip .ex-title .rec{color:var(--stop)}
+  .tag{
+    flex:0 0 auto; font-family:var(--font-m); font-size:11px; font-weight:600;
+    padding:3px 7px; border-radius:7px; background:var(--surface2); color:var(--ink2); border:1px solid var(--line); margin-top:2px;
+  }
+  .tag.aq{background:var(--accent-soft); color:var(--accent); border-color:var(--accent)}
+  .tag.tec{background:var(--warn-soft); color:var(--warn); border-color:var(--warn)}
+
+  .body{padding:0 14px 14px; border-top:1px solid var(--line); display:none}
+  .ex.active .body{display:block}
+
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:4px 12px; margin:13px 0 0; font-size:13px}
+  .kv dt{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); padding-top:3px}
+  .kv dd{margin:0; font-family:var(--font-m); font-size:13px; color:var(--ink2)}
+
+  .alvo{
+    margin-top:13px; border-radius:11px; padding:11px 13px;
+    background:var(--accent-soft); border:1px solid var(--accent);
+  }
+  .alvo .lab{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--accent); font-weight:600}
+  .alvo .val{font-family:var(--font-d); font-size:23px; font-weight:600; margin-top:2px; line-height:1.15; color:var(--ink)}
+  .alvo .why{font-size:12.5px; color:var(--ink2); margin-top:4px; line-height:1.4}
+
+  .ativa{
+    margin-top:13px; border-radius:11px; padding:10px 12px;
+    background:var(--surface2); border:1px dashed var(--line);
+  }
+  .ativa .lab{font-size:10.5px; letter-spacing:.09em; text-transform:uppercase; color:var(--muted); font-weight:600}
+  .ativa .why{font-size:12.5px; color:var(--ink2); margin-top:3px; line-height:1.4}
+  .ativa .duo{display:flex; gap:8px; margin-top:8px}
+  .ativa .duo > div{flex:1 1 0; min-width:0}
+  .ativa .duo span{display:block; font-size:10px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); margin-bottom:4px; font-weight:600}
+  .ativa input{
+    width:100%; height:44px; text-align:center; font-family:var(--font-m); font-size:17px; font-weight:600;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:9px;
+    font-variant-numeric:tabular-nums; padding:0 4px;
+  }
+  .obs{margin-top:14px}
+  .obs > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
+  .obs textarea{
+    width:100%; min-height:62px; resize:vertical; font-family:var(--font-b); font-size:14px; line-height:1.4;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:11px; padding:10px 11px;
+  }
+  .obs .dica{font-size:11.5px; color:var(--muted); margin-top:5px; line-height:1.35}
+
+  .nota{margin-top:11px; font-size:13px; color:var(--ink2); line-height:1.45; border-left:3px solid var(--line); padding-left:10px}
+  .nota.risk{border-left-color:var(--stop); color:var(--ink)}
+
+  /* steppers */
+  .field{margin-top:14px}
+  .field > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
+  .stepper{display:flex; align-items:stretch; gap:8px}
+  .stepper button{
+    flex:0 0 56px; height:52px; border-radius:11px; border:1px solid var(--line);
+    background:var(--surface2); font-size:24px; font-family:var(--font-d); line-height:1; color:var(--ink);
+  }
+  .stepper button:active{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+  .stepper input{
+    flex:1 1 auto; min-width:0; height:52px; text-align:center;
+    font-family:var(--font-m); font-size:21px; font-weight:600;
+    background:var(--surface); color:var(--ink);
+    border:1px solid var(--line); border-radius:11px; padding:0 6px;
+    font-variant-numeric:tabular-nums;
+  }
+
+  table.series{width:100%; border-collapse:collapse; margin-top:12px; font-family:var(--font-m); font-size:13px; table-layout:fixed}
+  table.series th{font-family:var(--font-b); font-size:10.5px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted); font-weight:600; text-align:left; padding:0 0 6px}
+  table.series td{padding:4px 4px 4px 0; border-top:1px solid var(--line)}
+  table.series td:first-child, table.series th:first-child{width:30px; color:var(--muted)}
+  table.series td:nth-child(2), table.series th:nth-child(2){width:84px}
+  table.series input{
+    width:100%; height:44px; text-align:center; font-family:var(--font-m); font-size:16px; font-weight:600;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:9px;
+    font-variant-numeric:tabular-nums; padding:0 2px;
+  }
+  .rirs{display:flex; gap:4px; padding-left:8px}
+  .rirs button{
+    flex:1 1 0; min-width:0; height:44px; border-radius:9px; border:1px solid var(--line);
+    background:var(--surface); font-family:var(--font-m); font-size:14px; font-weight:600; padding:0;
+  }
+  .rirs button[aria-pressed="true"]{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+
+  .row-btns{display:flex; gap:8px; margin-top:15px}
+  .btn{
+    flex:1 1 0; min-height:52px; border-radius:12px; border:1px solid var(--accent);
+    background:var(--accent); color:var(--accent-ink);
+    font-family:var(--font-d); font-size:16px; font-weight:600; letter-spacing:.03em; text-transform:uppercase;
+  }
+  .btn.danger{background:var(--surface); color:var(--stop); border-color:var(--stop); flex:0 0 40%}
+
+  /* ---------- rodapé fixo ---------- */
+  .dock{
+    position:fixed; left:0; right:0; bottom:0; z-index:50;
+    background:var(--surface); border-top:1px solid var(--line);
+    padding:9px 16px calc(9px + env(safe-area-inset-bottom));
+    box-shadow:0 -6px 20px rgba(0,0,0,.10);
+  }
+  .dock-inner{max-width:560px; margin:0 auto; display:flex; align-items:center; gap:10px}
+  .timer{flex:0 0 auto; display:flex; align-items:baseline; gap:6px; font-family:var(--font-m); font-variant-numeric:tabular-nums}
+  .timer .t{font-family:var(--font-d); font-size:30px; font-weight:600; line-height:1; min-width:74px}
+  .timer.run .t{color:var(--accent)}
+  .timer .s{font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted)}
+  .dock .acts{margin-left:auto; display:flex; gap:7px}
+  .dock .acts button{
+    min-height:46px; padding:0 13px; border-radius:11px; border:1px solid var(--line);
+    background:var(--surface2); font-family:var(--font-d); font-size:14px; font-weight:500;
+    letter-spacing:.03em; text-transform:uppercase; color:var(--ink);
+  }
+  .dock .acts button.pri{background:var(--accent); color:var(--accent-ink); border-color:var(--accent)}
+
+  /* ---------- folhas ---------- */
+  .sheet{position:fixed; inset:0; z-index:60; display:none}
+  .sheet[open]{display:block}
+  .sheet .scrim{position:absolute; inset:0; background:rgba(8,10,12,.6)}
+  .sheet .panel{
+    position:absolute; left:0; right:0; bottom:0; max-height:86vh; overflow:auto;
+    background:var(--ground); border-top:1px solid var(--line);
+    border-radius:20px 20px 0 0; padding:18px 16px calc(24px + env(safe-area-inset-bottom));
+  }
+  .sheet .panel > .inner{max-width:560px; margin:0 auto}
+  .sheet h2{font-family:var(--font-d); font-size:22px; font-weight:600; margin-bottom:4px}
+  .sheet h3{font-family:var(--font-d); font-size:15px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--muted); margin:20px 0 8px}
+  .rule{display:flex; gap:10px; padding:10px 0; border-top:1px solid var(--line); font-size:14px; line-height:1.45}
+  .rule:first-of-type{border-top:0}
+  .rule .i{flex:0 0 auto; width:24px; height:24px; border-radius:7px; display:grid; place-items:center;
+    font-family:var(--font-m); font-size:12px; font-weight:600; background:var(--surface2); border:1px solid var(--line); color:var(--muted)}
+  .rule.hard .i{background:var(--stop-soft); border-color:var(--stop); color:var(--stop)}
+  .rule a{color:var(--accent); font-weight:600}
+  .close{width:100%; min-height:50px; margin-top:20px; border-radius:12px; border:1px solid var(--line);
+    background:var(--surface); font-family:var(--font-d); font-size:15px; letter-spacing:.04em; text-transform:uppercase}
+
+  .menu-item{display:flex; align-items:center; gap:12px; width:100%; text-align:left; padding:13px 12px; margin-top:8px;
+    background:var(--surface); border:1px solid var(--line); border-radius:12px; font-size:14.5px}
+  .menu-item b{display:block; font-family:var(--font-d); font-size:16px; font-weight:600; letter-spacing:.02em}
+  .menu-item span{display:block; font-size:12.5px; color:var(--muted); margin-top:2px; line-height:1.35}
+  textarea.code{width:100%; min-height:46vh; font-family:var(--font-m); font-size:12px; line-height:1.45;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:11px; padding:10px; resize:vertical; white-space:pre}
+  textarea.paste{width:100%; min-height:120px; font-family:var(--font-m); font-size:12px;
+    background:var(--surface); color:var(--ink); border:1px solid var(--line); border-radius:11px; padding:10px}
+  .btns{display:flex; flex-wrap:wrap; gap:8px; margin-top:12px}
+  .btns .btn{flex:1 1 140px; min-height:46px; font-size:14px}
+  .btn.ghost{background:var(--surface); color:var(--ink2); border-color:var(--line)}
+  .msg{margin-top:10px; font-size:13px; line-height:1.45; padding:10px 12px; border-radius:10px; background:var(--surface2); border:1px solid var(--line)}
+  .msg.err{background:var(--stop-soft); border-color:var(--stop); color:var(--ink)}
+  .msg.ok{background:var(--ok-soft); border-color:var(--ok); color:var(--ink)}
+  .chk{display:flex; gap:8px; align-items:center; margin-top:10px; font-size:13.5px}
+  pre.log{
+    background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:12px; overflow-x:auto; font-family:var(--font-m); font-size:11.5px; line-height:1.6;
+    white-space:pre; margin-top:12px; color:var(--ink2);
+  }
+  .note{font-size:12.5px; color:var(--muted); line-height:1.5; margin-top:14px}
+  .status{font-family:var(--font-m); font-size:11.5px; color:var(--muted); margin-top:10px; text-align:center}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand">Caderno de Ferro<small id="hoje"></small></div>
+    <div class="top-actions">
+      <button class="icon-btn" id="btn-regras" type="button">Regras</button>
+      <button class="icon-btn" id="btn-ajustes" type="button">Ajustes</button>
+      <button class="icon-btn" id="btn-tema" type="button" aria-pressed="false" aria-label="Alternar tema claro e escuro">◐</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <nav class="picker" id="picker" aria-label="Escolha a sessão"></nav>
+  <p class="picker-nota" id="picker-nota"></p>
+
+  <section class="sess-head">
+    <h1 id="s-nome"></h1>
+    <div class="grupos" id="s-grupos"></div>
+    <div class="meta-row" id="s-meta"></div>
+    <div class="bar"><i id="s-bar"></i></div>
+  </section>
+
+  <div class="banner" id="banner" hidden>
+    <b id="banner-t"></b>
+    <p id="banner-p"></p>
+  </div>
+
+  <div class="list" id="lista"></div>
+
+  <div class="row-btns" style="margin-top:18px">
+    <button class="btn" id="btn-encerrar" type="button">Encerrar sessão</button>
+  </div>
+  <div class="status" id="status">Registro local. Sincronização do caderno: verificando.</div>
+  <p class="status" id="links"></p>
+</main>
+
+<div class="dock">
+  <div class="dock-inner">
+    <div class="timer" id="timer"><span class="t" id="t-val">--:--</span><span class="s" id="t-lab">descanso</span></div>
+    <div class="acts">
+      <button type="button" id="t-menos">-15s</button>
+      <button type="button" id="t-toggle" class="pri">Iniciar</button>
+    </div>
+  </div>
+</div>
+
+<div class="sheet" id="sheet-regras">
+  <div class="scrim" data-close></div>
+  <div class="panel"><div class="inner" id="regras-inner"></div></div>
+</div>
+
+<div class="sheet" id="sheet-ajustes">
+  <div class="scrim" data-close></div>
+  <div class="panel"><div class="inner" id="ajustes-inner"></div></div>
+</div>
+
+<div class="sheet" id="sheet-fim">
+  <div class="scrim" data-close></div>
+  <div class="panel"><div class="inner" id="fim-inner"></div></div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= PROGRAMA =================
+     TUDO O QUE É TREINO MORA NESTE OBJETO, e só nele: o bloco e suas datas,
+     a grade da semana, as fichas, os exercícios, as regras e os links.
+     O motor abaixo não tem treino escrito; ele lê o programa.
+
+     Três jeitos de mudar o treino, do mais simples ao mais livre:
+       1. No próprio app: Ajustes > Programa. Edita o JSON, valida e salva
+          neste aparelho, sem tocar no arquivo.
+       2. Pedindo a qualquer assistente de IA: copie o programa em
+          Ajustes > Programa, peça a mudança e cole a resposta de volta.
+       3. Editando este bloco aqui, no próprio arquivo.
+     O formato de cada campo está no LEIA-ME.md que acompanha o arquivo. */
+
+  const PROGRAMA_PADRAO = {
+      "formato": 1,
+      "versao": "Modelo neutro · importe o seu backup em Ajustes",
+      "bloco": {
+        "nome": "Modelo · 2026",
+        "semana1": {
+          "de": "2026-11-12",
+          "ate": "2026-11-17"
+        },
+        "deload": {
+          "de": "2026-12-21",
+          "ate": "2026-12-27"
+        },
+        "proximo": ""
+      },
+      "recuosExtras": [],
+      "mapaDia": {
+        "0": "E",
+        "2": "A",
+        "4": "B",
+        "5": "C",
+        "6": "D"
+      },
+      "links": [],
+      "sessoes": [
+        {
+          "id": "A",
+          "letra": "A",
+          "dia": "Ter",
+          "diaLongo": "Terça-feira",
+          "wd": 2,
+          "nome": "Superior 1 · ênfase peito, ombro e tríceps",
+          "grupos": "Peito 7 · Costas 6 · Ombro 6 · Tríceps 3 · Bíceps 2 · Core 3",
+          "ex": [
+            {
+              "id": "manguito-a",
+              "n": "Rotação externa de ombro",
+              "ap": "Halter deitado de lado ou polia baixa",
+              "tipo": "aquecimento",
+              "ser": 2,
+              "min": 15,
+              "max": 15,
+              "desc": 30,
+              "un": "kg"
+            },
+            {
+              "id": "sup-incl",
+              "ativa": true,
+              "n": "Supino inclinado na máquina",
+              "tipo": "trabalho",
+              "ser": 4,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg"
+            },
+            {
+              "id": "puxada-a",
+              "ativa": true,
+              "n": "Puxada alta pegada neutra (polia fixa)",
+              "ap": "Polia fixa, a mesma de 29/09, nas duas fichas",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "de resistência"
+            },
+            {
+              "id": "chest-press-a",
+              "n": "Supino na máquina",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg"
+            },
+            {
+              "id": "remada-maq",
+              "n": "Remada na máquina",
+              "ap": "Pegada neutra",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "de resistência"
+            },
+            {
+              "id": "desenvolv",
+              "ativa": true,
+              "n": "Desenvolvimento de ombro",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg de cada lado"
+            },
+            {
+              "id": "abducao",
+              "n": "Abdução de ombros",
+              "ap": "Halteres, parando na linha do ombro",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "tri-corda",
+              "ativa": true,
+              "ativaNota": "O tríceps já levou 10 séries de empurrar nesta sessão e chega quente. Ativação OPCIONAL.",
+              "n": "Tríceps na corda",
+              "ap": "Polia alta, a mesma de 22/09 e 29/09",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "rosca-alt-a",
+              "ativa": true,
+              "ativaNota": "O bíceps já levou 6 séries de puxar nesta sessão. Ativação OPCIONAL.",
+              "n": "Rosca alternada no banco inclinado",
+              "ap": "Halteres",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "prancha",
+              "n": "Abdominal prancha",
+              "ap": "Peso do corpo · anti-extensão",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 30,
+              "max": 45,
+              "desc": 30,
+              "un": "segundos"
+            }
+          ]
+        },
+        {
+          "id": "B",
+          "letra": "B",
+          "dia": "Qui",
+          "diaLongo": "Quinta-feira",
+          "wd": 4,
+          "nome": "Inferior 1 · ênfase quadríceps",
+          "grupos": "Quadríceps 12 · Posterior e glúteo 6 · Panturrilha 3 · Core 3",
+          "ex": [
+            {
+              "id": "agacho-livre",
+              "ativa": true,
+              "ativaNota": "Série 0 com a barra vazia, 10 a 15 repetições lentas, descendo até onde a coluna fica neutra. É ela que mostra a profundidade do dia.",
+              "n": "Agachamento livre com barra",
+              "ap": "Barra no trapézio · técnica antes de carga · anote só as anilhas",
+              "tipo": "trabalho",
+              "tec": true,
+              "ser": 3,
+              "min": 6,
+              "max": 8,
+              "desc": 120,
+              "un": "kg no total"
+            },
+            {
+              "id": "agacho-cinto",
+              "n": "Agachamento hack na máquina",
+              "ap": "Máquina inclinada de anilhas · costas coladas no encosto",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg de cada lado"
+            },
+            {
+              "id": "leg-press-b",
+              "n": "Leg press linear",
+              "ap": "O linear de pilha da academia de quinta, não o 45°",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "placas"
+            },
+            {
+              "id": "mesa-flexora-b",
+              "ativa": true,
+              "n": "Mesa flexora deitada",
+              "ap": "Aparelho DEITADO da academia de quinta",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 75,
+              "un": "placas"
+            },
+            {
+              "id": "extensora",
+              "n": "Cadeira extensora",
+              "ap": "A extensora da academia de quinta",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "placas"
+            },
+            {
+              "id": "elev-pelvica-b",
+              "n": "Elevação pélvica",
+              "ap": "Máquina de anilhas, quadril apoiado · anote o que vai de cada lado",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 75,
+              "un": "kg de cada lado"
+            },
+            {
+              "id": "pant-pe",
+              "ativa": true,
+              "n": "Panturrilha em pé unilateral",
+              "ap": "Gastrocnêmio, joelho estendido; halter na mão do mesmo lado",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "pallof",
+              "n": "Pallof press na polia",
+              "ap": "Anti-rotação, 2 s de pausa",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 15,
+              "desc": 45,
+              "un": "placas"
+            }
+          ]
+        },
+        {
+          "id": "C",
+          "letra": "C",
+          "dia": "Sex",
+          "diaLongo": "Sexta-feira",
+          "wd": 5,
+          "nome": "Superior 2 · ênfase costas e bíceps",
+          "grupos": "Costas 7 · Peito 6 · Ombro post. 3 · Bíceps 3 · Tríceps 2 · Core 3",
+          "ex": [
+            {
+              "id": "manguito-c",
+              "n": "Rotação externa de ombro",
+              "ap": "Halter deitado de lado ou polia baixa",
+              "tipo": "aquecimento",
+              "ser": 2,
+              "min": 15,
+              "max": 15,
+              "desc": 30,
+              "un": "kg"
+            },
+            {
+              "id": "remada-apoio",
+              "ativa": true,
+              "n": "Remada com peito apoiado",
+              "ap": "Máquina · APARELHO A IDENTIFICAR",
+              "tipo": "trabalho",
+              "ser": 4,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg de cada lado"
+            },
+            {
+              "id": "fly",
+              "ativa": true,
+              "n": "Crucifixo na máquina",
+              "ap": "Life Fitness Peitoral-Fly",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "puxada-c",
+              "n": "Puxada alta pegada neutra (polia fixa)",
+              "ap": "Polia fixa, a mesma da terça",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "de resistência"
+            },
+            {
+              "id": "chest-press-c",
+              "n": "Supino na máquina",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "kg"
+            },
+            {
+              "id": "facepull",
+              "ativa": true,
+              "n": "Face pull na polia alta",
+              "ap": "Trapézio médio e deltoide posterior",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "rosca-w",
+              "ativa": true,
+              "ativaNota": "O bíceps já levou 7 séries de puxar nesta sessão. Ativação OPCIONAL.",
+              "n": "Rosca direta na barra W",
+              "ap": "Barra W",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "kg de cada lado"
+            },
+            {
+              "id": "tri-frances",
+              "ativa": true,
+              "ativaNota": "O tríceps já levou 6 séries de empurrar nesta sessão. Ativação OPCIONAL.",
+              "n": "Tríceps francês com corda",
+              "ap": "Bilateral, as duas mãos na corda",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "elev-pernas",
+              "n": "Elevação de pernas suspenso na barra",
+              "ap": "Joelho flexionado · flexão de quadril",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 15,
+              "desc": 45,
+              "un": "peso do corpo"
+            }
+          ]
+        },
+        {
+          "id": "D",
+          "letra": "D",
+          "dia": "Sáb",
+          "diaLongo": "Sábado",
+          "wd": 6,
+          "nome": "Inferior 2 · ênfase posterior, glúteo e quadril",
+          "grupos": "Posterior e glúteo 10 · Quadríceps 3 · Quadril 4 · Panturrilha 3 · Core 3",
+          "ex": [
+            {
+              "id": "flexora-sent",
+              "ativa": true,
+              "n": "Cadeira flexora sentada",
+              "tipo": "trabalho",
+              "ser": 4,
+              "min": 10,
+              "max": 13,
+              "desc": 75,
+              "un": "de resistência"
+            },
+            {
+              "id": "stiff",
+              "n": "Stiff com barra",
+              "ap": "Joelho levemente flexionado, quadril para trás",
+              "tipo": "trabalho",
+              "tec": true,
+              "ser": 3,
+              "min": 8,
+              "max": 10,
+              "desc": 120,
+              "un": "kg no total"
+            },
+            {
+              "id": "leg-press-d",
+              "ativa": true,
+              "ativaNota": "Primeiro exercício de quadríceps do dia. Série leve e longa, sem contar volume.",
+              "n": "Leg press LINEAR",
+              "ap": "Pilha seletorizada, carga ÚNICA, pino, degrau de 10",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 90,
+              "un": "de resistência"
+            },
+            {
+              "id": "elev-pelvica-d",
+              "n": "Elevação pélvica na máquina",
+              "ap": "Glúteo, quadril apoiado",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 75,
+              "un": "de resistência"
+            },
+            {
+              "id": "abdutora",
+              "ativa": true,
+              "n": "Cadeira abdutora",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "adutora",
+              "n": "Cadeira adutora",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "pant-sent",
+              "ativa": true,
+              "n": "Panturrilha sentada",
+              "ap": "Sóleo, joelho dobrado",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "kg no total"
+            },
+            {
+              "id": "prancha-lat",
+              "n": "Prancha lateral",
+              "ap": "Anti-flexão lateral, por lado",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 20,
+              "max": 30,
+              "desc": 30,
+              "un": "segundos por lado"
+            }
+          ]
+        },
+        {
+          "id": "E",
+          "letra": "E",
+          "dia": "Dom",
+          "diaLongo": "Domingo",
+          "wd": 0,
+          "comp": true,
+          "nome": "Complemento · tronco superior e braços",
+          "grupos": "Peito 3 · Costas 3 · Ombro 6 · Bíceps 2 · Tríceps 2 · e zona 2 longa",
+          "ex": [
+            {
+              "id": "sup-incl-halter",
+              "ativa": true,
+              "n": "Supino inclinado com halteres",
+              "ap": "Banco a 30 graus",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 8,
+              "max": 12,
+              "desc": 90,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "remada-unil",
+              "ativa": true,
+              "n": "Remada unilateral com halter",
+              "ap": "Apoio no banco, puxando para o quadril",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 10,
+              "max": 13,
+              "desc": 75,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "elev-lat-polia",
+              "ativa": true,
+              "n": "Elevação lateral na polia",
+              "ap": "Unilateral, cabo passando por trás do corpo",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 45,
+              "un": "de resistência"
+            },
+            {
+              "id": "cruc-inv",
+              "n": "Crucifixo invertido na máquina",
+              "ap": "Deltoide posterior",
+              "tipo": "trabalho",
+              "ser": 3,
+              "min": 12,
+              "max": 15,
+              "desc": 60,
+              "un": "de resistência"
+            },
+            {
+              "id": "rosca-martelo",
+              "ativa": true,
+              "ativaNota": "O bíceps já levou 3 séries de remada nesta sessão. Ativação OPCIONAL.",
+              "n": "Rosca martelo com halteres",
+              "ap": "Pegada neutra, braquial e braquiorradial",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "kg cada halter"
+            },
+            {
+              "id": "tri-barra",
+              "ativa": true,
+              "ativaNota": "O tríceps já levou 3 séries de supino nesta sessão. Ativação OPCIONAL.",
+              "n": "Tríceps na polia com barra reta",
+              "ap": "Polia alta, cotovelos colados",
+              "tipo": "trabalho",
+              "ser": 2,
+              "min": 10,
+              "max": 13,
+              "desc": 60,
+              "un": "de resistência"
+            }
+          ]
+        }
+      ],
+      "regras": {
+        "duras": [
+          [
+            "1",
+            "Este arquivo é um modelo, sem programa pessoal e sem histórico. Para carregar os seus, abra Ajustes > Backup > Importar, escolha o arquivo de backup e marque a opção de importar também o programa."
+          ]
+        ],
+        "moles": [],
+        "sentinela": []
+      },
+      "modelo": true
+    };
+
+  const RIR_OPCOES = ["0","1","2","3","4"];
+
+  /* HISTÓRICO DE PARTIDA: execuções que entram só na primeira abertura deste
+     arquivo num aparelho novo, para a progressão não começar do zero. */
+  const SEED_EXECUCOES = [];
+
+  /* Programa salvo neste aparelho (Ajustes > Programa) vence o padrão do
+     arquivo, desde que passe na validação. */
+  function carregarPrograma(){
+    try{
+      const raw = localStorage.getItem("cdf:programa");
+      if(raw){
+        const p = JSON.parse(raw);
+        if(validarPrograma(p).length === 0) return { p: p, origem: "salvo neste aparelho" };
+      }
+    }catch(e){}
+    return { p: PROGRAMA_PADRAO, origem: "padrão do arquivo" };
+  }
+
+  function validarPrograma(p){
+    const erros = [];
+    if(!p || typeof p !== "object") return ["o programa não é um objeto JSON"];
+    if(!p.bloco || !p.bloco.nome) erros.push("falta bloco.nome");
+    ["semana1","deload"].forEach(function(k){
+      if(!p.bloco || !p.bloco[k] || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.bloco[k].de||"")) || !/^\d{4}-\d{2}-\d{2}$/.test(String(p.bloco[k].ate||"")))
+        erros.push("bloco."+k+" precisa de de e ate no formato AAAA-MM-DD");
+    });
+    if(!p.mapaDia || typeof p.mapaDia !== "object") erros.push("falta mapaDia (dia da semana, 0 = domingo, para a letra da ficha)");
+    if(!Array.isArray(p.sessoes) || !p.sessoes.length){ erros.push("sessoes precisa ser uma lista com pelo menos uma ficha"); return erros; }
+    const ids = {};
+    p.sessoes.forEach(function(s, i){
+      const onde = "sessoes["+i+"]";
+      if(!s || !s.id || !s.letra || !s.nome) erros.push(onde+" precisa de id, letra e nome");
+      if(s && ids[s.id]) erros.push("ficha "+s.id+" repetida"); if(s) ids[s.id] = true;
+      if(!s || !Array.isArray(s.ex) || !s.ex.length){ erros.push(onde+".ex precisa ser uma lista de exercícios"); return; }
+      const exIds = {};
+      s.ex.forEach(function(e, j){
+        const o = onde+".ex["+j+"]";
+        ["id","n","tipo","ser","min","max","desc","un"].forEach(function(k){
+          if(e[k] === undefined || e[k] === null || e[k] === "") erros.push(o+" sem o campo "+k);
+        });
+        if(e.tipo && ["trabalho","aquecimento"].indexOf(e.tipo) < 0) erros.push(o+".tipo deve ser trabalho ou aquecimento");
+        ["ser","min","max","desc"].forEach(function(k){ if(e[k] !== undefined && !(Number(e[k]) > 0)) erros.push(o+"."+k+" deve ser número maior que zero"); });
+        if(Number(e.min) > Number(e.max)) erros.push(o+": min maior que max");
+        if(exIds[e.id]) erros.push(o+": id "+e.id+" repetido na ficha"); exIds[e.id] = true;
+        if(e.nomesAntigos !== undefined && (!Array.isArray(e.nomesAntigos) || e.nomesAntigos.some(function(x){ return typeof x !== "string"; })))
+          erros.push(o+".nomesAntigos deve ser uma lista de textos");
+      });
+    });
+    Object.keys(p.mapaDia || {}).forEach(function(d){
+      if(!ids[p.mapaDia[d]]) erros.push("mapaDia aponta o dia "+d+" para a ficha "+p.mapaDia[d]+", que não existe");
+    });
+    return erros;
+  }
+
+  const CARREGADO = carregarPrograma();
+  /* Programa salvo no aparelho vence o do arquivo. Quando o arquivo chega com
+     outra versão, o app avisa em vez de trocar sozinho. */
+  function programaDefasado(){
+    if(PROGRAMA_PADRAO.modelo) return false;   /* arquivo público: só traz o modelo neutro */
+    return CARREGADO.origem === "salvo neste aparelho" && (CARREGADO.p.versao || "") !== (PROGRAMA_PADRAO.versao || "");
+  }
+  const PROGRAMA = CARREGADO.p;
+  const BLOCO = PROGRAMA.bloco;
+  const LINKS = PROGRAMA.links || [];
+  const S = PROGRAMA.sessoes;
+  const REGRAS = PROGRAMA.regras || { duras:[], moles:[], sentinela:[] };
+
+  /* JANELAS DE RECUO DELIBERADO: recalibração e deload do bloco, mais as que
+     o programa trouxer. Carga registrada dentro de uma delas, e ABAIXO da
+     base, não vira base de progressão. */
+  const RECUOS = (PROGRAMA.recuosExtras || []).concat([
+    { de: BLOCO.semana1.de, ate: BLOCO.semana1.ate, nome:"recalibração do bloco" },
+    { de: BLOCO.deload.de,  ate: BLOCO.deload.ate,  nome:"deload do bloco" }
+  ]);
+  function emRecuo(dataISO){
+    if(typeof dataISO !== "string") return null;
+    for(let i=0;i<RECUOS.length;i++){
+      if(dataISO >= RECUOS[i].de && dataISO <= RECUOS[i].ate) return RECUOS[i];
+    }
+    return null;
+  }
+
+  /* ================= ESTADO ================= */
+
+  const hojeISO = (function(){
+    const d = new Date();
+    return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
+  })();
+
+  const DIAS = ["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+  const MESES = ["jan","fev","mar","abr","mai","jun","jul","ago","set","out","nov","dez"];
+
+  let atual = null;
+  let registro = {};
+  let historico = {};
+  let ultimaExec = {};        // { exId: 'AAAA-MM-DD' } da última execução, recuo incluído
+  let historicoCarregado = false;
+  let feitasNaSemana = {};
+  let db = null;
+  let modo = "local";   // "claude" quando roda como artefato do claude.ai, com banco na nuvem
+  let timerId = null, restam = 0, rodando = false;
+
+  /* ================= HELPERS ================= */
+
+  function $(id){ return document.getElementById(id); }
+  function el(tag, cls, txt){ const e=document.createElement(tag); if(cls) e.className=cls; if(txt!=null) e.textContent=txt; return e; }
+  function fmtNum(v){
+    if(v==null || v==="") return "·";
+    const n = Number(v);
+    if(!isFinite(n)) return String(v);
+    return (Math.round(n*100)/100).toString().replace(".", ",");
+  }
+  function dataCurta(iso){
+    if(!iso) return "";
+    const p = iso.split("-");
+    return p[2]+"/"+p[1];
+  }
+  function lsGet(k){ try{ return JSON.parse(localStorage.getItem(k)); }catch(e){ return null; } }
+  function lsSet(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){} }
+
+  /* Terça A, quinta B, sexta C, sábado D, domingo E. Segunda e quarta não
+     treinam: nesses dias o ponto aponta a PRÓXIMA ficha. */
+  const MAPA_DIA = PROGRAMA.mapaDia || {};
+  function ehDiaDeTreino(){ return !!MAPA_DIA[new Date().getDay()]; }
+  function sessaoDoDia(){
+    const wd = new Date().getDay();
+    for(let i=0;i<7;i++){
+      const id = MAPA_DIA[(wd+i)%7];
+      if(id){ const s = S.find(function(x){ return x.id===id; }); if(s) return s; }
+    }
+    return S[0];
+  }
+
+  function semanaCorrente(){
+    const d = new Date();
+    const diff = (d.getDay() + 6) % 7;
+    const seg = new Date(d); seg.setDate(d.getDate() - diff); seg.setHours(0,0,0,0);
+    const dom = new Date(seg); dom.setDate(seg.getDate() + 6); dom.setHours(23,59,59,999);
+    return [seg, dom];
+  }
+
+  function naSemana1(){ return hojeISO >= BLOCO.semana1.de && hojeISO <= BLOCO.semana1.ate; }
+  /* A RECALIBRAÇÃO É POR EXERCÍCIO, E NÃO SÓ POR DATA. A primeira execução de
+     cada exercício dentro do bloco mede, mesmo que caia depois da semana 1:
+     se uma ficha não rodar na semana 1, ela recalibra na primeira vez que rodar. */
+  function recalibra(ex){
+    if(naDeload()) return false;
+    if(naSemana1()) return true;
+    if(!historicoCarregado) return false;
+    if(hojeISO > BLOCO.deload.ate) return false;
+    const u = ultimaExec[ex.id];
+    return !u || u < BLOCO.semana1.de;
+  }
+  function naDeload(){ return hojeISO >= BLOCO.deload.de && hojeISO <= BLOCO.deload.ate; }
+  function blocoEncerrado(){ return hojeISO > BLOCO.deload.ate; }
+
+  function porSegundo(ex){ return String(ex.un || "").indexOf("segundo") >= 0; }
+
+  /* Nem toda carga existe na sala. Halter não tem quarto de quilo, anilha de cada
+     lado anda de 1,25 em 1,25 e a barra carregada anda de 2,5 em 2,5. */
+  function arredonda(v, un){
+    if(v == null) return null;
+    const u = String(un || "");
+    if(u.indexOf("placa") >= 0) return Math.max(1, Math.round(v));
+    if(u.indexOf("cada halter") >= 0) return Math.floor(v);
+    if(u.indexOf("de cada lado") >= 0) return Math.round(v/1.25)*1.25;
+    if(u.indexOf("no total") >= 0) return Math.round(v/2.5)*2.5;
+    return Math.round(v*4)/4;
+  }
+  function degrau(base, un){
+    if(String(un || "").indexOf("placa") >= 0) return 1;   /* pilha numerada: uma placa por vez */
+    return base >= 40 ? 5 : (base >= 20 ? 2.5 : (base >= 8 ? 1 : 0.5));
+  }
+
+  function seriesDoDia(ex){
+    if(ex.tipo !== "trabalho") return ex.ser;
+    if(naDeload()) return Math.max(2, Math.ceil(ex.ser/2));
+    if(recalibra(ex)) return Math.min(3, ex.ser);
+    return ex.ser;
+  }
+
+  /* Progressão dupla. A faixa fecha no topo e a carga sobe; passou do topo em
+     duas ou mais, sobe mais de um degrau (teto de três); caiu duas abaixo do
+     piso, desce um degrau e recomeça. */
+  /* O aviso de falha acompanha qualquer prescrição de trabalho. */
+  function alvoDe(ex){
+    const r = alvoBase(ex);
+    const h = historico[ex.id];
+    if(r && r.porque && ex.tipo === "trabalho" && h && h.rir === "0" && r.porque.indexOf("(RIR 0)") < 0 && !naDeload())
+      r.porque += " A última sessão foi até a falha (RIR 0): confira nas Regras se esta fase permite.";
+    return r;
+  }
+  function alvoBase(ex){
+    const h = historico[ex.id];
+    const base = porSegundo(ex) ? null
+      : (h && h.carga != null ? Number(h.carga) : (ex.ref && ex.ref.c != null ? Number(ex.ref.c) : null));
+    const reps = h && h.reps != null ? Number(h.reps) : (ex.ref && ex.ref.r != null ? Number(ex.ref.r) : null);
+    const ser = seriesDoDia(ex);
+    const sfx = porSegundo(ex) ? " s" : "";
+
+    if(ex.tipo === "aquecimento"){
+      return { series:ser, carga:base, reps:ex.min, texto: ser+" × "+ex.min+", carga leve",
+               porque:"Aquecimento. Não conta volume e não progride por carga." };
+    }
+    if(base == null && reps == null){
+      return { series:ser, carga:null, reps:ex.min, texto:"Calibrar: "+ser+" × "+ex.min+sfx,
+               porque: ex.tec
+                 ? "Sem carga registrada. Hoje é calibração de técnica: a carga certa é a que deixa 3 a 4 repetições no tanque com a coluna neutra. Anote-a."
+                 : "Sem execução registrada. Hoje é medição: a carga que sai no piso da faixa com 3 no tanque. Anote-a." };
+    }
+    if(naDeload()){
+      return { series:ser, carga:base, reps:ex.min,
+               texto:(base!=null ? fmtNum(base)+" "+ex.un+" · " : "")+ser+" × "+ex.min+sfx,
+               porque:"Semana de deload: metade das séries, a mesma carga, RIR 3. Não mede e não progride; serve para chegar inteiro ao próximo bloco." };
+    }
+    if(recalibra(ex)){
+      const c = arredonda(base != null ? base*0.9 : null, ex.un);
+      return { series:ser, carga:c, reps:ex.min,
+               texto:(c!=null ? fmtNum(c)+" "+ex.un+" · " : "")+ser+" × "+ex.min+sfx,
+               porque:"Recalibração: primeira execução deste exercício no bloco. Menos 10% na carga, no máximo três séries e RIR 3. Se a pilha não tiver esse número, use a placa imediatamente abaixo. Esta carga NÃO vira base: na próxima vez a régua parte da última carga cheia registrada." };
+    }
+    const rirTxt = h ? h.rir : (ex.ref && ex.ref.rir);
+    const rirUlt = (rirTxt !== "" && rirTxt != null && isFinite(Number(rirTxt))) ? Number(rirTxt) : null;
+    const avisoFalha = rirUlt === 0 ? " A última sessão foi até a falha (RIR 0): confira nas Regras se esta fase permite." : "";
+    /* TÉCNICA NÃO SOBE CARGA NO SUFOCO. Exercício de técnica só ganha carga
+       quando a sessão inteira fechou com 3 ou mais no tanque. */
+    if(ex.tec && base != null && rirUlt != null && rirUlt < 3 && reps != null && reps >= ex.min){
+      return { series:ser, carga:base, reps:ex.max,
+               texto: fmtNum(base)+" "+ex.un+" · "+ser+" × "+ex.max+sfx,
+               porque:"Exercício de técnica. A última sessão chegou a "+rirUlt+" no tanque, abaixo dos 3 que a técnica pede. Mesma carga, até "+ex.max+" repetições, e a série termina quando restarem 3 a 4. A carga só sobe quando o topo sair com 3 no tanque." + avisoFalha };
+    }
+    if(reps != null && reps >= ex.max){
+      if(base == null){
+        return { series:ser, carga:null, reps:ex.max, texto: ser+" × "+ex.max+sfx,
+                 porque:"Fechou o topo da faixa sem carga externa. Daqui em diante a progressão é por variação mais difícil, e não por repetição. Me diga quando chegar aqui." };
+      }
+      const excesso = reps - ex.max;
+      /* Passar do topo só prova carga leve quando sobrou fôlego. Com 0 ou 1 no
+         tanque, ou em exercício de técnica, o salto é de um degrau só. */
+      const n = (ex.tec || (rirUlt != null && rirUlt <= 1)) ? 1 : Math.min(3, 1 + Math.floor(excesso/2));
+      const c = arredonda(base + n*degrau(base, ex.un), ex.un);
+      return { series:ser, carga:c, reps:ex.min,
+               texto: fmtNum(c)+" "+ex.un+" · "+ser+" × "+ex.min,
+               porque: n === 1
+                 ? (excesso >= 2
+                     ? "A última sessão passou do topo da faixa em "+excesso+" repetições, mas "+(ex.tec ? "é exercício de técnica" : "com "+rirUlt+" no tanque")+": a carga sobe um degrau só e a repetição volta ao piso."
+                     : "A última sessão fechou no topo da faixa. A carga sobe um degrau e a repetição volta ao piso.")
+                 : "A última sessão passou do topo da faixa em "+excesso+" repetiç"+(excesso>1?"ões":"ão")+": carga leve demais. Sobe "+n+" degraus e a repetição volta ao piso." };
+    }
+    if(base != null && reps != null && reps <= ex.min - 2 && !porSegundo(ex)){
+      const c = arredonda(Math.max(0, base - degrau(base, ex.un)), ex.un);
+      return { series:ser, carga:c, reps:ex.min,
+               texto: fmtNum(c)+" "+ex.un+" · "+ser+" × "+ex.min,
+               porque:"A última sessão ficou "+(ex.min-reps)+" repetições abaixo do piso. A carga desce um degrau e a faixa recomeça do piso; na semana seguinte ela volta a subir." };
+    }
+    /* Falha não se soma: depois de RIR 0, repete as repetições com fôlego. */
+    if(rirUlt === 0 && reps != null && !porSegundo(ex)){
+      const rr = Math.max(ex.min, Math.min(reps, ex.max));
+      return { series:ser, carga:base, reps:rr,
+               texto:(base!=null ? fmtNum(base)+" "+ex.un+" · " : "")+ser+" × "+rr,
+               porque:"A última sessão foi até a falha (RIR 0). Mesma carga e as mesmas "+rr+" repetições, agora parando com 1 a 2 no tanque. A repetição a mais vem quando sobrar fôlego. Confira nas Regras se esta fase permite falha." };
+    }
+    const passoRep = porSegundo(ex) ? 5 : 1;
+    const alvoReps = Math.min((reps != null ? reps : ex.min) + passoRep, ex.max);
+    return { series:ser, carga:base, reps:alvoReps,
+             texto:(base!=null ? fmtNum(base)+" "+ex.un+" · " : "")+ser+" × "+alvoReps+sfx,
+             porque: porSegundo(ex)
+               ? "Mesmo apoio, 5 segundos a mais por série. Ao bater "+ex.max+" s nas "+ser+", a progressão passa a ser por variação mais difícil."
+               : "Mesma carga, uma repetição a mais por série. Ao bater "+ex.max+" nas "+ser+", a carga sobe." };
+  }
+
+  /* ================= RENDER ================= */
+
+  const ORDEM = S.map(function(s){ return s.id; });
+
+  function legendaGrade(){
+    const ordemDias = [1,2,3,4,5,6,0];
+    return ordemDias.filter(function(d){ return MAPA_DIA[d]; }).map(function(d){
+      const s = S.find(function(x){ return x.id === MAPA_DIA[d]; }) || {};
+      return DIAS[d].toLowerCase() + " " + (s.letra || MAPA_DIA[d]) + (s.comp ? " (complemento)" : "");
+    }).join(", ");
+  }
+
+  function renderPicker(){
+    const p = $("picker"); p.textContent = "";
+    p.style.gridTemplateColumns = "repeat(" + Math.max(1, S.length) + ",1fr)";
+    const sugerida = sessaoDoDia().id;
+    ORDEM.map(function(id){ return S.find(function(x){ return x.id===id; }); }).forEach(function(s){
+      const b = el("button"); b.type="button";
+      b.setAttribute("aria-pressed", String(!!(atual && atual.id===s.id)));
+      if(feitasNaSemana[s.id]) b.classList.add("feita");
+      if(s.id === sugerida) b.classList.add("hoje");
+      if(s.comp) b.classList.add("comp");
+      b.appendChild(el("span","k", s.letra));
+      b.appendChild(el("span","d", feitasNaSemana[s.id] ? ("feito " + feitasNaSemana[s.id]) : s.dia));
+      b.setAttribute("aria-label", s.letra + " " + s.nome + (feitasNaSemana[s.id] ? ", já registrado em " + feitasNaSemana[s.id] : ", sem registro nesta semana"));
+      b.addEventListener("click", function(){ escolher(s.id); });
+      p.appendChild(b);
+    });
+    const estruturais = S.filter(function(s){ return !s.comp; });
+    const feitas = S.filter(function(s){ return feitasNaSemana[s.id]; });
+    const faltam = estruturais.filter(function(s){ return !feitasNaSemana[s.id]; });
+    $("picker-nota").textContent = (ehDiaDeTreino() ? "" : "Hoje não é dia de treino: o ponto marca a próxima ficha. ")
+      + (function(t){ return t.charAt(0).toUpperCase() + t.slice(1) + ". "; })(legendaGrade())
+      + (feitas.length ? feitas.length + " registrada" + (feitas.length>1?"s":"") + " nesta semana ("
+          + feitas.map(function(s){ return s.letra; }).join(", ") + "). "
+        : "Nenhuma registrada nesta semana ainda. ")
+      + (faltam.length ? "Estruturais sem registro: " + faltam.map(function(s){ return s.letra; }).join(", ") + "." : "Todas as estruturais estão feitas.");
+  }
+
+  function seriesDaSessao(s){
+    return s.ex.reduce(function(a,e){ return a + (e.tipo==="trabalho" ? seriesDoDia(e) : 0); },0);
+  }
+
+  function renderCabecalho(){
+    $("s-nome").textContent = atual.nome;
+    $("s-grupos").textContent = atual.grupos;
+    const meta = $("s-meta"); meta.textContent="";
+    [atual.diaLongo, seriesDaSessao(atual)+" séries de trabalho", atual.ex.length+" exercícios"].forEach(function(t){
+      meta.appendChild(el("span","chip", t));
+    });
+    if(atual.ex.some(function(e){ return e.tipo==="trabalho" && recalibra(e); })) meta.appendChild(el("span","chip warn","Recalibração"));
+    if(naDeload()) meta.appendChild(el("span","chip warn","Deload"));
+    if(atual.comp) meta.appendChild(el("span","chip on","Complemento"));
+    meta.appendChild(el("span","chip", BLOCO.nome));
+
+    const b = $("banner");
+    b.hidden = false;
+    const AV = BLOCO.avisos || {};
+    function dm(iso){ return iso ? iso.slice(8,10)+"/"+iso.slice(5,7) : ""; }
+    function aviso(chave, tPadrao, pPadrao){
+      const a = AV[chave] || {};
+      $("banner-t").textContent = a.t || tPadrao;
+      $("banner-p").textContent = a.p || pPadrao;
+    }
+    if(naSemana1()){
+      aviso("semana1", "Semana 1 · recalibração · "+dm(BLOCO.semana1.de)+" a "+dm(BLOCO.semana1.ate),
+        "Três séries em tudo, carga 10% abaixo da última registrada e parada com 3 no tanque. Esta semana mede, não progride.");
+    } else if(naDeload()){
+      aviso("deload", "Deload · "+dm(BLOCO.deload.de)+" a "+dm(BLOCO.deload.ate),
+        "Metade das séries, a mesma carga, RIR 3.");
+    } else if(blocoEncerrado()){
+      aviso("encerrado", "Bloco encerrado",
+        "O deload terminou em "+dm(BLOCO.deload.ate)+"."+(BLOCO.proximo ? " O "+BLOCO.proximo+" precisa da ficha nova: atualize o programa em Ajustes." : " Atualize o programa em Ajustes.")+" Até lá, rode estas fichas como estão.");
+    } else {
+      b.hidden = true;
+    }
+    atualizarBarra();
+  }
+
+  function atualizarBarra(){
+    const total = atual.ex.length;
+    const feitos = atual.ex.filter(function(e){ return registro[e.id]; }).length;
+    $("s-bar").style.width = (total ? Math.round(feitos/total*100) : 0) + "%";
+  }
+
+  function renderLista(){
+    const L = $("lista"); L.textContent = "";
+    atual.ex.forEach(function(ex, i){ L.appendChild(cardExercicio(ex, i)); });
+    const prim = atual.ex.find(function(e){ return !registro[e.id]; });
+    if(prim) abrir(prim.id, false);
+  }
+
+  function cardExercicio(ex, i){
+    const reg = registro[ex.id];
+    const alvo = alvoDe(ex);
+    const card = el("div","ex" + (reg ? (reg.status==="nao" ? " skip" : " done") : ""));
+    card.dataset.ex = ex.id;
+
+    const head = el("button","ex-head"); head.type="button";
+    const num = el("div","num", reg ? (reg.status==="nao" ? "×" : "✓") : String(i+1));
+    const tit = el("div","ex-title");
+    tit.appendChild(el("span","n", ex.n));
+    tit.appendChild(el("span","ap", ex.ap));
+    if(reg){
+      tit.appendChild(el("span","rec", reg.status==="nao" ? "Não executado" : resumoRegistro(ex, reg)));
+    }
+    const tag = el("span","tag" + (ex.tipo==="aquecimento" ? " aq" : (ex.tec ? " tec" : "")),
+      ex.tipo==="aquecimento" ? "aquec." : (ex.tec ? "técnica" : alvo.series+" sér."));
+    head.appendChild(num); head.appendChild(tit); head.appendChild(tag);
+    head.addEventListener("click", function(){
+      if(card.classList.contains("active")) card.classList.remove("active");
+      else abrir(ex.id, true);
+    });
+    card.appendChild(head);
+
+    const body = el("div","body");
+
+    const box = el("div","alvo");
+    box.appendChild(el("div","lab","Alvo de hoje"));
+    box.appendChild(el("div","val", alvo.texto));
+    box.appendChild(el("div","why", alvo.porque));
+    body.appendChild(box);
+
+    const dl = el("dl","kv");
+    const h = historico[ex.id];
+    dl.appendChild(el("dt",null,"Última"));
+    dl.appendChild(el("dd",null, h
+      ? (dataCurta(h.data)+" · "+(h.carga!=null? fmtNum(h.carga)+" "+ex.un+" · ":"")+h.series+"×"+h.reps+(h.rir?" · RIR "+h.rir:""))
+      : refTexto(ex)));
+    dl.appendChild(el("dt",null,"Faixa"));
+    dl.appendChild(el("dd",null, ex.tipo==="aquecimento" ? "2 × 15, carga leve" : ex.min+" a "+ex.max+(porSegundo(ex)?" segundos":" repetições")));
+    dl.appendChild(el("dt",null,"Descanso"));
+    dl.appendChild(el("dd",null, ex.desc+" s"));
+    body.appendChild(dl);
+
+    if(ex.nota){
+      ex.nota.split(" || ").forEach(function(trecho){
+        body.appendChild(el("div","nota" + (/lombar|ânsia|canela|pare|coluna/i.test(trecho) ? " risk" : ""), trecho));
+      });
+    }
+
+    /* SÉRIE 0, DE ATIVAÇÃO. Vai no PRIMEIRO exercício de cada grupo da ficha.
+       Não conta volume, não pede RIR e não entra na progressão. */
+    if(ex.ativa && ex.tipo === "trabalho" && !porSegundo(ex)){
+      const bloco = el("div","ativa");
+      bloco.appendChild(el("div","lab","Série 0 · ativação do grupo"));
+      bloco.appendChild(el("div","why", ex.ativaNota ||
+        ("Primeiro exercício de " + grupoDe(ex).toLowerCase() + " da sessão. Uma série leve e longa antes das de trabalho: ensaia o movimento, leva sangue ao músculo e não conta volume. Os demais exercícios deste grupo entram direto.")));
+      const duo = el("div","duo");
+      const dC = el("div"); dC.appendChild(el("span",null,"Carga · "+ex.un));
+      const iC = el("input"); iC.type="text"; iC.inputMode="decimal"; iC.id="ativa-carga-"+ex.id;
+      const sugerida = alvo.carga != null ? arredonda(alvo.carga*0.5, ex.un) : null;
+      iC.value = (reg && reg.ativacao && reg.ativacao.carga != null) ? fmtNum(reg.ativacao.carga)
+               : (sugerida != null ? fmtNum(sugerida) : "");
+      iC.placeholder = "metade";
+      dC.appendChild(iC);
+      const dR = el("div"); dR.appendChild(el("span",null,"Repetições"));
+      const iR = el("input"); iR.type="text"; iR.inputMode="numeric"; iR.id="ativa-reps-"+ex.id;
+      iR.value = (reg && reg.ativacao && reg.ativacao.reps) ? reg.ativacao.reps : "15";
+      dR.appendChild(iR);
+      duo.appendChild(dC); duo.appendChild(dR);
+      bloco.appendChild(duo);
+      body.appendChild(bloco);
+    }
+
+    /* carga */
+    const nSer = alvo.series;
+    const fCarga = el("div","field");
+    const lab = el("label", null, "Carga · "+ex.un);
+    lab.setAttribute("for","carga-"+ex.id);
+    fCarga.appendChild(lab);
+    const st = el("div","stepper");
+    const menos = el("button",null,"−"); menos.type="button"; menos.setAttribute("aria-label","Diminuir carga");
+    const inp = el("input"); inp.type="text"; inp.inputMode="decimal"; inp.id="carga-"+ex.id;
+    inp.value = (reg && reg.carga!=null) ? fmtNum(reg.carga) : (alvo.carga!=null ? fmtNum(alvo.carga) : "");
+    inp.placeholder = ex.un === "peso do corpo" ? "peso do corpo" : "carga";
+    const mais = el("button",null,"+"); mais.type="button"; mais.setAttribute("aria-label","Aumentar carga");
+    const passo = function(){ const v = parseFloat(String(inp.value).replace(",",".")); return isFinite(v) ? degrau(v, ex.un) : (String(ex.un||"").indexOf("placa") >= 0 ? 1 : 0.5); };
+    menos.addEventListener("click", function(){ const v=parseFloat(String(inp.value).replace(",","."))||0; inp.value=fmtNum(Math.max(0, v-passo())); });
+    mais.addEventListener("click", function(){ const v=parseFloat(String(inp.value).replace(",","."))||0; inp.value=fmtNum(v+passo()); });
+    st.appendChild(menos); st.appendChild(inp); st.appendChild(mais);
+    fCarga.appendChild(st);
+    body.appendChild(fCarga);
+
+    /* séries */
+    const tb = el("table","series");
+    const thead = el("thead"); const trh = el("tr");
+    ["", porSegundo(ex) ? "Seg." : "Reps", "RIR"].forEach(function(t){ trh.appendChild(el("th",null,t)); });
+    thead.appendChild(trh); tb.appendChild(thead);
+    const tbody = el("tbody");
+    for(let s=1; s<=nSer; s++){
+      const tr = el("tr");
+      tr.appendChild(el("td",null, s+"ª"));
+      const tdR = el("td");
+      const ri = el("input"); ri.type="text"; ri.inputMode="numeric";
+      ri.id = "reps-"+ex.id+"-"+s;
+      ri.setAttribute("aria-label", s+"ª série, repetições");
+      ri.value = (reg && reg.linhas && reg.linhas[s-1]) ? reg.linhas[s-1].reps : alvo.reps;
+      tdR.appendChild(ri); tr.appendChild(tdR);
+      const tdV = el("td");
+      if(ex.tipo === "aquecimento"){
+        tdV.appendChild(el("span",null,"·"));
+      } else {
+        const wrap = el("div","rirs");
+        RIR_OPCOES.forEach(function(v){
+          const b = el("button",null,v); b.type="button";
+          b.setAttribute("aria-label","RIR "+v+" na série "+s);
+          const atualRir = (reg && reg.linhas && reg.linhas[s-1]) ? reg.linhas[s-1].rir : null;
+          b.setAttribute("aria-pressed", String(atualRir===v));
+          b.addEventListener("click", function(){
+            wrap.querySelectorAll("button").forEach(function(o){ o.setAttribute("aria-pressed","false"); });
+            b.setAttribute("aria-pressed","true");
+          });
+          wrap.appendChild(b);
+        });
+        tdV.appendChild(wrap);
+      }
+      tr.appendChild(tdV);
+      tbody.appendChild(tr);
+    }
+    tb.appendChild(tbody);
+    body.appendChild(tb);
+
+    const fObs = el("div","obs");
+    const labO = el("label", null, "Observação desta execução");
+    labO.setAttribute("for","obs-"+ex.id);
+    fObs.appendChild(labO);
+    const ta = el("textarea"); ta.id = "obs-"+ex.id;
+    ta.value = (reg && reg.obs) ? reg.obs : "";
+    ta.placeholder = "Aparelho trocado, polia diferente, academia, carga que não existia, noite mal dormida, dor ou incômodo.";
+    fObs.appendChild(ta);
+    fObs.appendChild(el("div","dica","Vai inteira para a coluna Observação do backup e do CSV. Se a placa não bater com o esforço, escreva aqui."));
+    body.appendChild(fObs);
+
+    const acts = el("div","row-btns");
+    const ok = el("button","btn","Concluir"); ok.type="button";
+    ok.addEventListener("click", function(){ concluir(ex, card); });
+    const nao = el("button","btn danger","Não executado"); nao.type="button";
+    nao.addEventListener("click", function(){ naoExecutado(ex); });
+    acts.appendChild(ok); acts.appendChild(nao);
+    body.appendChild(acts);
+
+    card.appendChild(body);
+    return card;
+  }
+
+  function refTexto(ex){
+    const r = ex.ref || {};
+    if(r.c == null && r.r == null) return r.txt ? (r.d ? r.d+" · "+r.txt : r.txt) : "sem registro";
+    const partes = [];
+    if(r.d) partes.push(r.d);
+    if(r.c != null) partes.push(fmtNum(r.c)+" "+ex.un);
+    if(r.r != null) partes.push("3×"+r.r+(porSegundo(ex)?" s":""));
+    if(r.rir) partes.push("RIR "+r.rir);
+    return partes.join(" · ");
+  }
+
+  function resumoRegistro(ex, reg){
+    if(!reg.linhas || !reg.linhas.length) return "registrado";
+    const reps = reg.linhas.map(function(l){ return l.reps; });
+    const iguais = reps.every(function(r){ return r===reps[0]; });
+    const rir = reg.linhas.map(function(l){ return l.rir; }).filter(Boolean);
+    const rirTxt = rir.length && rir.every(function(r){ return r===rir[0]; }) ? " · RIR "+rir[0] : "";
+    const ativ = reg.ativacao && reg.ativacao.reps
+      ? "ativ. "+(reg.ativacao.carga!=null?fmtNum(reg.ativacao.carga)+"×":"")+reg.ativacao.reps+" · " : "";
+    return ativ + (reg.carga!=null ? fmtNum(reg.carga)+" "+ex.un+" · " : "")
+      + (iguais ? reg.linhas.length+"×"+reps[0] : reps.join("/")) + rirTxt
+      + (reg.obs ? " · obs." : "");
+  }
+
+  function abrir(exId, scroll){
+    document.querySelectorAll(".ex").forEach(function(c){ c.classList.remove("active"); });
+    const card = document.querySelector('.ex[data-ex="'+exId+'"]');
+    if(!card) return;
+    card.classList.add("active");
+    if(scroll && card.scrollIntoView) card.scrollIntoView({behavior:"smooth", block:"start"});
+  }
+
+  function concluir(ex, card){
+    const carga = parseFloat(String((document.getElementById("carga-"+ex.id)||{}).value||"").replace(",","."));
+    const linhas = [];
+    card.querySelectorAll("tbody tr").forEach(function(tr){
+      const inp = tr.querySelector("input");
+      const pressed = tr.querySelector('.rirs button[aria-pressed="true"]');
+      linhas.push({ reps: (inp.value||"").trim(), rir: pressed ? pressed.textContent : "" });
+    });
+    const iAC = document.getElementById("ativa-carga-"+ex.id);
+    const iAR = document.getElementById("ativa-reps-"+ex.id);
+    let ativacao = null;
+    if(iAC || iAR){
+      const ac = parseFloat(String((iAC||{}).value||"").replace(",","."));
+      const ar = String((iAR||{}).value||"").trim();
+      if(ar) ativacao = { carga: isFinite(ac) ? ac : null, reps: ar };
+    }
+    const ta = document.getElementById("obs-"+ex.id);
+    registro[ex.id] = {
+      status: "feito",
+      carga: isFinite(carga) ? carga : null,
+      un: ex.un,
+      linhas: linhas,
+      ativacao: ativacao,
+      obs: ta ? String(ta.value||"").trim() : ""
+    };
+    salvarLocal();
+    redesenhar();
+    iniciarTimer(ex.desc);
+    const prox = atual.ex.find(function(e){ return !registro[e.id]; });
+    if(prox) setTimeout(function(){ abrir(prox.id, true); }, 120);
+  }
+
+  function naoExecutado(ex){
+    const taN = document.getElementById("obs-"+ex.id);
+    registro[ex.id] = { status:"nao", carga:null, un:ex.un, linhas:[], ativacao:null,
+                        obs: taN ? String(taN.value||"").trim() : "" };
+    salvarLocal();
+    redesenhar();
+    const prox = atual.ex.find(function(e){ return !registro[e.id]; });
+    if(prox) setTimeout(function(){ abrir(prox.id, true); }, 100);
+  }
+
+  function redesenhar(){
+    const abertoId = (document.querySelector(".ex.active")||{dataset:{}}).dataset.ex;
+    renderLista();
+    if(abertoId && registro[abertoId] === undefined) abrir(abertoId, false);
+    atualizarBarra();
+  }
+
+  /* ================= TIMER ================= */
+
+  function pinta(){
+    const m = Math.floor(Math.max(0,restam)/60), s = Math.max(0,restam)%60;
+    $("t-val").textContent = String(m).padStart(2,"0")+":"+String(s).padStart(2,"0");
+    $("timer").classList.toggle("run", rodando);
+    $("t-toggle").textContent = rodando ? "Parar" : "Iniciar";
+  }
+  function iniciarTimer(seg){
+    restam = seg || 60; rodando = true;
+    $("t-lab").textContent = "descanso de "+restam+" s";
+    clearInterval(timerId);
+    timerId = setInterval(function(){
+      restam--;
+      if(restam <= 0){
+        clearInterval(timerId); rodando = false; restam = 0;
+        $("t-lab").textContent = "vai";
+        try{ if(navigator.vibrate) navigator.vibrate([220,90,220]); }catch(e){}
+      }
+      pinta();
+    }, 1000);
+    pinta();
+  }
+  $("t-toggle").addEventListener("click", function(){
+    if(rodando){ clearInterval(timerId); rodando=false; pinta(); }
+    else { iniciarTimer(restam > 0 ? restam : 60); }
+  });
+  $("t-menos").addEventListener("click", function(){ restam = Math.max(0, restam - 15); pinta(); });
+
+  /* ================= PERSISTÊNCIA ================= */
+
+  function chaveLocal(){ return "cdf:"+hojeISO+":"+(atual?atual.id:"x"); }
+  function salvarLocal(){ lsSet(chaveLocal(), registro); }
+  function carregarLocal(){ const r = lsGet(chaveLocal()); registro = r && typeof r==="object" ? r : {}; }
+
+  function escolher(id){
+    atual = S.find(function(s){ return s.id===id; }) || S[0];
+    lsSet("cdf:ultima", id);
+    carregarLocal();
+    renderPicker(); renderCabecalho(); renderLista();
+  }
+
+  function grupoDe(ex){
+    if(ex.grupo) return ex.grupo;
+    const m = {
+      "manguito-a":"Manguito","manguito-c":"Manguito",
+      "sup-incl":"Peito","chest-press-a":"Peito","chest-press-c":"Peito", fly:"Peito", "sup-incl-halter":"Peito",
+      "puxada-a":"Costas","puxada-c":"Costas","remada-maq":"Costas","remada-apoio":"Costas","remada-unil":"Costas",
+      desenvolv:"Ombro", abducao:"Ombro", facepull:"Ombro", "cruc-inv":"Ombro", "elev-lat-polia":"Ombro",
+      "tri-corda":"Tríceps","tri-frances":"Tríceps","tri-barra":"Tríceps",
+      "rosca-alt-a":"Bíceps","rosca-w":"Bíceps","rosca-martelo":"Bíceps",
+      "agacho-livre":"Quadríceps","agacho-cinto":"Quadríceps","leg-press-b":"Quadríceps","leg-press-d":"Quadríceps",extensora:"Quadríceps",
+      "flexora-sent":"Posterior/Glúteo","mesa-flexora-b":"Posterior/Glúteo","stiff":"Posterior/Glúteo",
+      "elev-pelvica-b":"Posterior/Glúteo","elev-pelvica-d":"Posterior/Glúteo",
+      abdutora:"Adutor/Abdutor", adutora:"Adutor/Abdutor",
+      "pant-sent":"Panturrilha","pant-pe":"Panturrilha",
+      pallof:"Core", prancha:"Core", "prancha-lat":"Core", "elev-pernas":"Core"
+    };
+    return m[ex.id] || "sem grupo";
+  }
+
+  function linhasDoLog(){
+    const out = [];
+    const dataBR = dataCurta(hojeISO)+"/"+hojeISO.slice(0,4);
+    atual.ex.forEach(function(ex){
+      const reg = registro[ex.id];
+      if(!reg) return;
+      const obs = reg.obs || "";
+      if(reg.status === "nao"){
+        out.push([dataBR, atual.letra+" "+atual.nome, grupoDe(ex), ex.n, "", "não executado", "", "", "", "", obs]);
+        return;
+      }
+      if(ex.tipo === "aquecimento"){
+        const l = reg.linhas[0] || {};
+        out.push([dataBR, atual.letra+" "+atual.nome, grupoDe(ex), ex.n, "", "aquecimento",
+          reg.carga!=null?fmtNum(reg.carga):"", ex.un, l.reps||"", "", obs]);
+        return;
+      }
+      if(reg.ativacao && reg.ativacao.reps){
+        out.push([dataBR, atual.letra+" "+atual.nome, grupoDe(ex), ex.n, "0", "ativação",
+          reg.ativacao.carga!=null?fmtNum(reg.ativacao.carga):"", ex.un, reg.ativacao.reps, "", ""]);
+      }
+      reg.linhas.forEach(function(l, i){
+        out.push([dataBR, atual.letra+" "+atual.nome, grupoDe(ex), ex.n, String(i+1), "trabalho",
+          reg.carga!=null?fmtNum(reg.carga):"", ex.un, l.reps||"", l.rir||"", i===0 ? obs : ""]);
+      });
+    });
+    return out;
+  }
+
+  /* ================= ARMAZENAMENTO =================
+     Duas casas possíveis para as execuções, com a mesma interface:
+     o banco do claude.ai, quando o arquivo roda como artefato de lá, e o
+     próprio aparelho (localStorage), quando roda solto ou instalado como app.
+     Neste aparelho, cada execução é um objeto com id "AAAA-MM-DD__FICHA". */
+
+  function lerLocais(){
+    const v = lsGet("cdf:execucoes");
+    if(Array.isArray(v)) return v;
+    if(!lsGet("cdf:semeado")){
+      lsSet("cdf:execucoes", SEED_EXECUCOES);
+      lsSet("cdf:semeado", true);
+      return SEED_EXECUCOES.slice();
+    }
+    return [];
+  }
+  function gravarLocal(id, doc){
+    const v = lerLocais().filter(function(x){ return x.id !== id; });
+    v.push(Object.assign({ id: id }, doc));
+    v.sort(function(a, b){ return String(a.data).localeCompare(String(b.data)); });
+    lsSet("cdf:execucoes", v);
+  }
+  async function listarExecucoes(){
+    if(modo === "claude" && db){
+      const snap = await db.collection("execucoes").orderBy("data","asc").limit(1000).get();
+      return snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data() || {}); });
+    }
+    return lerLocais();
+  }
+  async function salvarExecucao(id, doc){
+    if(modo === "claude" && db){ await db.doc("execucoes/"+id).set(doc); }
+    gravarLocal(id, doc);
+  }
+
+  async function gravarNoCaderno(){
+    try{
+      const linhas = linhasDoLog();
+      await salvarExecucao(hojeISO+"__"+atual.id, {
+        data: hojeISO,
+        sessao: atual.id,
+        nome: atual.nome,
+        bloco: BLOCO.nome,
+        gravadoEm: new Date().toISOString(),
+        linhas: linhas.map(function(l){
+          return { data:l[0], ficha:l[1], grupo:l[2], exercicio:l[3], serie:l[4], tipo:l[5],
+                   carga:l[6], un:l[7], reps:l[8], rir:l[9], obs:l[10] };
+        })
+      });
+      return { ok:true, id: hojeISO+"__"+atual.id };
+    }catch(e){
+      return { ok:false, motivo: (e && e.code) ? e.code : "falha ao gravar" };
+    }
+  }
+
+  async function carregarHistorico(){
+    try{
+      const docs = await listarExecucoes();
+      const h = {};
+      ultimaExec = {};
+      const [semIni, semFim] = semanaCorrente();
+      feitasNaSemana = {};
+      /* O HISTÓRICO SEGUE O EXERCÍCIO, E NÃO A FICHA: a última carga vai para
+         toda ficha em que o exercício aparece com o mesmo nome. */
+      const TODOS = [];
+      S.forEach(function(sx){ sx.ex.forEach(function(ex){ TODOS.push(ex); }); });
+      docs.forEach(function(b){
+        b = b || {};
+        if(!Array.isArray(b.linhas)) return;
+        if(typeof b.data === "string"){
+          const pd = b.data.split("-");
+          const dd = new Date(Number(pd[0]), Number(pd[1])-1, Number(pd[2]));
+          const temTrabalho = b.linhas.some(function(l){ return l.tipo === "trabalho"; });
+          const conhecida = S.some(function(sx){ return sx.id === b.sessao; });
+          if(temTrabalho && conhecida && dd >= semIni && dd <= semFim) feitasNaSemana[b.sessao] = dataCurta(b.data);
+        }
+        const recuo = emRecuo(b.data);
+        TODOS.forEach(function(ex){
+          const nomes = [ex.n].concat(Array.isArray(ex.nomesAntigos) ? ex.nomesAntigos : []);
+          const suas = b.linhas.filter(function(l){ return nomes.indexOf(l.exercicio) >= 0 && l.tipo === "trabalho"; });
+          if(!suas.length) return;
+          if(typeof b.data === "string" && (!ultimaExec[ex.id] || b.data > ultimaExec[ex.id])) ultimaExec[ex.id] = b.data;
+          const ultima = suas[suas.length-1];
+          const carga = ultima.carga ? parseFloat(String(ultima.carga).replace(",",".")) : null;
+          /* RECUO DELIBERADO NÃO VIRA BASE. Registro feito em janela de recuo e
+             ABAIXO da base é ignorado como régua; acima dela, vale. */
+          if(recuo && carga != null){
+            const anterior = h[ex.id] && h[ex.id].carga != null
+              ? h[ex.id].carga
+              : (ex.ref && ex.ref.c != null ? Number(ex.ref.c) : null);
+            if(anterior != null && carga < anterior) return;
+          }
+          h[ex.id] = {
+            data: b.data,
+            carga: isFinite(carga) ? carga : null,
+            reps: ultima.reps ? parseInt(ultima.reps,10) : null,
+            /* RIR da sessão: o MENOR registrado nas séries de trabalho. A série
+               mais perto da falha é a que diz quanto a carga custou. */
+            rir: (function(){
+              const v = suas.map(function(l){ return parseFloat(String(l.rir).replace(",",".")); }).filter(function(x){ return isFinite(x); });
+              return v.length ? String(Math.min.apply(null, v)) : "";
+            })(),
+            series: suas.length,
+            recuo: !!recuo
+          };
+        });
+      });
+      historico = h;
+      historicoCarregado = true;
+      renderPicker();
+      if(atual){ renderCabecalho(); renderLista(); }
+      const nf = Object.keys(feitasNaSemana).length;
+      $("status").textContent = (modo === "claude" ? "Caderno conectado ao claude.ai · " : "Dados neste aparelho · faça backup em Ajustes · ")
+        + Object.keys(h).length+" exercícios com histórico · "
+        + (nf ? nf+" sessão"+(nf>1?"ões":"")+" registrada"+(nf>1?"s":"")+" nesta semana." : "nenhuma sessão registrada nesta semana.")
+        + (programaDefasado() ? " O arquivo traz programa mais novo: Ajustes > Programa." : "");
+    }catch(e){
+      $("status").textContent = "Caderno indisponível agora. O registro fica salvo neste aparelho.";
+    }
+  }
+
+  /* ================= FOLHAS ================= */
+
+  function abrirSheet(id){ $(id).setAttribute("open",""); }
+  function fecharSheet(id){ $(id).removeAttribute("open"); }
+  /* Fecha a folha aberta (Regras, Ajustes, fim de sessão). Devolve true se havia uma. */
+  window.cdfFecharFolha = function(){
+    const aberta = document.querySelector(".sheet[open]");
+    if(aberta){ aberta.removeAttribute("open"); return true; }
+    return false;
+  };
+  document.querySelectorAll("[data-close]").forEach(function(s){
+    s.addEventListener("click", function(){ s.closest(".sheet").removeAttribute("open"); });
+  });
+
+  function montarRegras(){
+    const c = $("regras-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Regras que governam a sessão"));
+    if((REGRAS.duras||[]).length) c.appendChild(el("h3",null,"Não se negocia"));
+    (REGRAS.duras||[]).forEach(function(r){
+      const d = el("div","rule hard");
+      d.appendChild(el("div","i", r[0]));
+      d.appendChild(el("div",null, r[1]));
+      c.appendChild(d);
+    });
+    if((REGRAS.moles||[]).length) c.appendChild(el("h3",null,"Operação da semana"));
+    (REGRAS.moles||[]).forEach(function(r){
+      const d = el("div","rule");
+      d.appendChild(el("div","i", r[0]));
+      d.appendChild(el("div",null, r[1]));
+      c.appendChild(d);
+    });
+    if((REGRAS.sentinela||[]).length) c.appendChild(el("h3",null,"Sentinelas abertas"));
+    (REGRAS.sentinela||[]).forEach(function(r){
+      const d = el("div","rule");
+      d.appendChild(el("div","i","!"));
+      const t = el("div");
+      t.appendChild(el("b",null,r[0]+". "));
+      t.appendChild(document.createTextNode(r[1]));
+      d.appendChild(t);
+      c.appendChild(d);
+    });
+    if(LINKS.length){
+      c.appendChild(el("h3",null,"Plano e mesa"));
+      LINKS.forEach(function(l){
+        const d = el("div","rule");
+        d.appendChild(el("div","i","→"));
+        const t = el("div");
+        const a = el("a",null,l.nome); a.href = l.url; a.target = "_blank"; a.rel = "noopener";
+        t.appendChild(a);
+        if(l.desc) t.appendChild(document.createTextNode(" · "+l.desc));
+        d.appendChild(t);
+        c.appendChild(d);
+      });
+    }
+    const btn = el("button","close","Fechar"); btn.type="button";
+    btn.addEventListener("click", function(){ fecharSheet("sheet-regras"); });
+    c.appendChild(btn);
+  }
+
+  async function encerrar(){
+    const c = $("fim-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Sessão de "+DIAS[new Date().getDay()]+", "+dataCurta(hojeISO)));
+
+    const feitos = atual.ex.filter(function(e){ return registro[e.id] && registro[e.id].status==="feito"; });
+    const pulados = atual.ex.filter(function(e){ return registro[e.id] && registro[e.id].status==="nao"; });
+    const faltam = atual.ex.filter(function(e){ return !registro[e.id]; });
+    const seriesFeitas = feitos.reduce(function(a,e){
+      return a + (e.tipo==="trabalho" ? (registro[e.id].linhas||[]).length : 0);
+    },0);
+
+    const resumo = el("p");
+    resumo.style.cssText = "font-size:14.5px;line-height:1.5;margin:6px 0 0;color:var(--ink2)";
+    resumo.textContent = feitos.length+" exercícios concluídos, "+seriesFeitas+" séries de trabalho"
+      + (pulados.length ? ", "+pulados.length+" lançados como não executados" : "")
+      + (faltam.length ? ". Ficaram "+faltam.length+" sem registro nenhum, e isso vira lacuna e não zero." : ".");
+    c.appendChild(resumo);
+
+    const st = el("p"); st.style.cssText="margin:12px 0 0;font-size:13.5px";
+    st.textContent = "Gravando no caderno…";
+    c.appendChild(st);
+
+    abrirSheet("sheet-fim");
+    const r = await gravarNoCaderno();
+    st.textContent = r.ok
+      ? (modo === "claude" ? "Gravado no caderno do claude.ai." : "Gravado neste aparelho.")
+      : "Não deu para gravar agora ("+r.motivo+"). Copie o bloco abaixo e guarde.";
+    if(r.ok) carregarHistorico();
+
+    /* Backup em .md a cada sessão encerrada (fora do claude.ai, que bloqueia downloads). */
+    if(r.ok && podeBaixar()){
+      const stB = el("p"); stB.style.cssText = "margin:10px 0 0;font-size:13.5px;font-weight:600";
+      stB.textContent = "Gerando o backup…";
+      const caixaB = el("div","btns");
+      c.appendChild(stB); c.appendChild(caixaB);
+      await exportarMd(r.id, stB, caixaB);
+    }
+
+    c.appendChild(el("h3",null,"Linhas prontas para colar numa planilha"));
+    const pre = el("pre","log");
+    const linhas = linhasDoLog();
+    pre.textContent = linhas.length
+      ? linhas.map(function(l){ return l.join("\t"); }).join("\n")
+      : "Nenhum exercício registrado nesta sessão.";
+    c.appendChild(pre);
+
+    const cop = el("button","btn","Copiar as linhas"); cop.type="button";
+    cop.style.marginTop = "12px";
+    cop.addEventListener("click", function(){
+      const t = pre.textContent;
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          navigator.clipboard.writeText(t).then(function(){ cop.textContent = "Copiado"; },
+                                                function(){ cop.textContent = "Selecione e copie acima"; });
+        } else { cop.textContent = "Selecione e copie acima"; }
+      }catch(e){ cop.textContent = "Selecione e copie acima"; }
+    });
+    c.appendChild(cop);
+
+    c.appendChild(el("p","note","Ordem das colunas, igual à do caderno: Data, Ficha, Grupo, Exercício, Série, Tipo, Carga, Unidade, Reps, RIR, Observação. Exercício que não saiu entra como linha de tipo não executado, para a falta aparecer na série histórica em vez de virar silêncio."));
+
+    const btn = el("button","close","Fechar"); btn.type="button";
+    btn.addEventListener("click", function(){ fecharSheet("sheet-fim"); });
+    c.appendChild(btn);
+  }
+
+  /* ================= AJUSTES ================= */
+
+  /* GANCHOS PARA CASCA NATIVA (Android/Capacitor). O motor não sabe em que
+     casca roda: quem embrulha o app define window.cdfSalvarArquivo(nome,
+     conteudo, tipo) para salvar ou compartilhar arquivos, e usa
+     window.cdfFecharFolha() no botão Voltar. */
+  function baixar(nome, conteudo, tipo){
+    if(typeof window.cdfSalvarArquivo === "function"){
+      try{ window.cdfSalvarArquivo(nome, conteudo, tipo || "application/octet-stream"); return true; }catch(e){ return false; }
+    }
+    try{
+      const blob = new Blob([conteudo], { type: tipo || "application/octet-stream" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob); a.download = nome;
+      document.body.appendChild(a); a.click();
+      setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+      return true;
+    }catch(e){ return false; }
+  }
+  function copiar(texto, botao){
+    const ok = function(){ if(botao) botao.textContent = "Copiado"; };
+    try{
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        navigator.clipboard.writeText(texto).then(ok, function(){ if(botao) botao.textContent = "Selecione e copie"; });
+        return;
+      }
+    }catch(e){}
+    if(botao) botao.textContent = "Selecione e copie";
+  }
+  function carimbo(){ return hojeISO.replace(/-/g, ""); }
+  function msg(cont, texto, tipo){
+    let m = cont.querySelector(".msg");
+    if(!m){ m = el("div","msg"); cont.appendChild(m); }
+    m.className = "msg" + (tipo ? " "+tipo : "");
+    m.textContent = texto;
+    return m;
+  }
+  function botao(txt, cls, fn){ const b = el("button", "btn"+(cls?" "+cls:""), txt); b.type = "button"; b.addEventListener("click", fn); return b; }
+  function podeBaixar(){ return modo !== "claude"; }
+
+  function telaAjustes(){
+    const c = $("ajustes-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Ajustes"));
+    c.appendChild(el("p","note", "Armazenamento: " + (modo === "claude" ? "banco do claude.ai (nuvem)." : "este aparelho (localStorage). Nada sai daqui sem o senhor exportar.")
+      + " Programa em uso: " + (PROGRAMA.versao || "sem versão") + ", " + CARREGADO.origem + "."));
+    [
+      ["Programa", "Ver e editar fichas, exercícios, datas e regras em JSON. Serve para editar à mão ou levar a qualquer IA.", telaPrograma],
+      ["Backup", "Exportar ou importar todo o histórico. É assim que os dados passam de um aparelho para outro.", telaBackup],
+      ["Planilha (CSV)", "Todas as séries registradas, uma por linha, para Excel, Google Sheets ou IA.", telaCSV]
+    ].forEach(function(it){
+      const b = el("button","menu-item"); b.type = "button";
+      const t = el("div"); t.appendChild(el("b",null,it[0])); t.appendChild(el("span",null,it[1])); b.appendChild(t);
+      b.addEventListener("click", it[2]);
+      c.appendChild(b);
+    });
+    const fechar = el("button","close","Fechar"); fechar.type = "button";
+    fechar.addEventListener("click", function(){ fecharSheet("sheet-ajustes"); });
+    c.appendChild(fechar);
+  }
+
+  function voltarBtn(){ return botao("Voltar", "ghost", telaAjustes); }
+
+  function telaPrograma(){
+    const c = $("ajustes-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Programa"));
+    c.appendChild(el("p","note","Edite o JSON e toque em Validar e salvar. Para pedir a uma IA: copie, cole na conversa com o pedido (\"troque o crucifixo por crucifixo na polia\", \"monte o Meso 2\") e cole a resposta aqui. O histórico não muda; ele segue o nome de cada exercício."));
+    c.appendChild(el("p","note","Em uso: " + (PROGRAMA.versao || "sem versão") + " (" + CARREGADO.origem + ")."
+      + (programaDefasado() ? " O arquivo traz: " + PROGRAMA_PADRAO.versao + ". Para adotá-lo, toque em Voltar ao programa do arquivo." : "")));
+    const ta = el("textarea","code"); ta.spellcheck = false;
+    ta.value = JSON.stringify(PROGRAMA, null, 2);
+    c.appendChild(ta);
+    const b = el("div","btns");
+    b.appendChild(botao("Validar e salvar", "", function(){
+      let p;
+      try{ p = JSON.parse(ta.value); }catch(e){ msg(c, "O texto não é um JSON válido: " + e.message, "err"); return; }
+      const erros = validarPrograma(p);
+      if(erros.length){ msg(c, "Não salvei. Corrija: " + erros.slice(0, 8).join("; ") + (erros.length > 8 ? "; e mais " + (erros.length-8) + "." : "."), "err"); return; }
+      try{ localStorage.setItem("cdf:programa", JSON.stringify(p)); }catch(e){ msg(c, "Este navegador não deixou salvar.", "err"); return; }
+      msg(c, "Programa salvo neste aparelho. Recarregando…", "ok");
+      setTimeout(function(){ location.reload(); }, 600);
+    }));
+    b.appendChild(botao("Copiar", "ghost", function(){ copiar(ta.value, this); }));
+    if(podeBaixar()) b.appendChild(botao("Baixar programa.json", "ghost", function(){ baixar("programa-" + carimbo() + ".json", ta.value, "application/json"); }));
+    if(!PROGRAMA_PADRAO.modelo) b.appendChild(botao("Voltar ao programa do arquivo", "ghost", function(){
+      try{ localStorage.removeItem("cdf:programa"); }catch(e){}
+      msg(c, "Voltando ao programa original do arquivo…", "ok");
+      setTimeout(function(){ location.reload(); }, 600);
+    }));
+    b.appendChild(voltarBtn());
+    c.appendChild(b);
+  }
+
+  async function montarBackup(){
+    const execucoes = await listarExecucoes();
+    /* Leva sempre o programa EM USO, para o backup bastar sozinho. */
+    return { app: "caderno-de-ferro", formato: 1, exportadoEm: new Date().toISOString(), origem: modo,
+             programaOrigem: CARREGADO.origem, programa: PROGRAMA, execucoes: execucoes };
+  }
+
+  /* ================= BACKUP EM MARKDOWN =================
+     Um .md por sessão encerrada. Cada arquivo é COMPLETO: traz a leitura
+     humana (sessão, últimas cargas, histórico) e, no fim, o bloco de dados
+     com tudo o que o app precisa para restaurar, com assinatura de
+     integridade. O arquivo mais recente basta; os antigos são redundância. */
+
+  function fnv1a(str){
+    let x = 0x811c9dc5;
+    for(let i = 0; i < str.length; i++){ x ^= str.charCodeAt(i); x = Math.imul(x, 0x01000193) >>> 0; }
+    return ("0000000" + x.toString(16)).slice(-8);
+  }
+  function dois(n){ return (n < 10 ? "0" : "") + n; }
+  function isoParaBR(iso){ return iso && iso.length >= 10 ? iso.slice(8,10)+"/"+iso.slice(5,7)+"/"+iso.slice(0,4) : (iso || ""); }
+  function celula(v){ return String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ").trim(); }
+  function tabela(cab, linhas){
+    if(!linhas.length) return "_Sem registros._\n";
+    return "| " + cab.join(" | ") + " |\n|" + cab.map(function(){ return "---"; }).join("|") + "|\n"
+      + linhas.map(function(l){ return "| " + l.map(celula).join(" | ") + " |"; }).join("\n") + "\n";
+  }
+  /* Resume as séries de trabalho de um exercício numa sessão. */
+  /* A unidade que vale é a do programa em uso: o número registrado se lê por ela. */
+  function unidadeAtual(nome, gravada){
+    for(const sx of S){ for(const e of sx.ex){ if(e.n === nome || (Array.isArray(e.nomesAntigos) && e.nomesAntigos.indexOf(nome) >= 0)) return e.un; } }
+    return gravada || "";
+  }
+  function resumoExercicio(ls){
+    const trab = ls.filter(function(l){ return l.tipo === "trabalho"; });
+    const nao = ls.some(function(l){ return l.tipo === "não executado"; });
+    if(!trab.length) return nao ? { carga:"", reps:"não executado", rir:"", obs: ls.map(function(l){ return l.obs; }).filter(Boolean).join("; ") } : null;
+    const cargas = trab.map(function(l){ return l.carga === "" || l.carga == null ? "" : String(l.carga); });
+    const unicas = cargas.filter(function(v, i){ return v !== "" && cargas.indexOf(v) === i; });
+    const un = unidadeAtual(trab[0].exercicio, trab[0].un);
+    const seg = /segundo/.test(un);
+    return {
+      carga: unicas.length ? unicas.join(" / ") + (un ? " " + un : "") : (seg ? "" : "peso do corpo"),
+      reps: trab.map(function(l){ return (l.reps || "?") + (seg ? " s" : ""); }).join(" / "),
+      rir: trab.map(function(l){ return l.rir === "" || l.rir == null ? "?" : l.rir; }).join(" / "),
+      obs: ls.map(function(l){ return l.obs; }).filter(Boolean).join("; ")
+    };
+  }
+  function porExercicio(linhas){
+    const ordem = [], grupos = {};
+    (linhas || []).forEach(function(l){
+      const k = l.exercicio || "?";
+      if(!grupos[k]){ grupos[k] = []; ordem.push(k); }
+      grupos[k].push(l);
+    });
+    return ordem.map(function(k){ return { nome:k, linhas:grupos[k] }; });
+  }
+
+  async function montarBackupMd(idSessao){
+    const bk = await montarBackup();
+    const json = JSON.stringify(bk).replace(/`/g, "\\u0060");
+    const assinatura = fnv1a(json);
+    const ex = (bk.execucoes || []).slice().sort(function(a, b){
+      const ka = (a.data || "") + (a.gravadoEm || ""), kb = (b.data || "") + (b.gravadoEm || "");
+      return ka < kb ? 1 : (ka > kb ? -1 : 0);
+    });
+    const agora = new Date();
+    const quando = dois(agora.getDate())+"/"+dois(agora.getMonth()+1)+"/"+agora.getFullYear()+", "+dois(agora.getHours())+"h"+dois(agora.getMinutes());
+    const sessao = idSessao ? ex.find(function(e){ return e.id === idSessao; }) : null;
+    const nome = "caderno-de-ferro-" + agora.getFullYear()+"-"+dois(agora.getMonth()+1)+"-"+dois(agora.getDate())
+      + "-" + dois(agora.getHours()) + "h" + dois(agora.getMinutes()) + (sessao && sessao.sessao ? "-" + sessao.sessao : "") + ".md";
+
+    const L = [];
+    L.push("# Caderno de Ferro · backup de " + quando, "");
+    L.push("> Backup completo. Este arquivo sozinho restaura tudo: no Caderno, abra Ajustes > Backup > Importar, escolha este arquivo e marque \"Importar também o programa\". Não edite o bloco \"Dados para restauração\": a assinatura no fim denuncia qualquer alteração.", "");
+    L.push("- **Programa em uso:** " + (bk.programa && bk.programa.versao ? bk.programa.versao : "sem versão") + " (" + (bk.programaOrigem || "") + ")");
+    L.push("- **Execuções registradas:** " + ex.length + (ex.length ? ", de " + isoParaBR(ex[ex.length-1].data) + " a " + isoParaBR(ex[0].data) : ""));
+    if(sessao) L.push("- **Sessão que gerou este backup:** " + (sessao.sessao || "") + " · " + (sessao.nome || "") + ", " + isoParaBR(sessao.data));
+    L.push("- **Assinatura:** fnv1a " + assinatura + " · " + json.length + " caracteres", "");
+
+    if(sessao){
+      L.push("## Sessão encerrada", "");
+      L.push(tabela(["Exercício","Tipo","Série","Carga","Unidade","Reps","RIR","Observação"],
+        (sessao.linhas || []).map(function(l){ return [l.exercicio, l.tipo, l.serie, l.carga, unidadeAtual(l.exercicio, l.un), l.reps, l.rir, l.obs]; })));
+    }
+
+    /* Última execução de cada exercício, na ordem do programa. */
+    const ultimo = {};
+    ex.slice().reverse().forEach(function(e){
+      porExercicio(e.linhas).forEach(function(g){
+        const r = resumoExercicio(g.linhas);
+        if(r && r.reps !== "não executado") ultimo[g.nome] = { data:e.data, r:r };
+      });
+    });
+    const ordemProg = [];
+    S.forEach(function(sx){ sx.ex.forEach(function(e){ if(ordemProg.indexOf(e.n) < 0) ordemProg.push(e.n); }); });
+    const nomes = Object.keys(ultimo).sort(function(a, b){
+      const ia = ordemProg.indexOf(a), ib = ordemProg.indexOf(b);
+      if(ia >= 0 && ib >= 0) return ia - ib; if(ia >= 0) return -1; if(ib >= 0) return 1; return a.localeCompare(b, "pt-BR");
+    });
+    L.push("## Última execução de cada exercício", "");
+    L.push(tabela(["Exercício","Data","Carga","Reps","RIR"], nomes.map(function(n){
+      const u = ultimo[n]; return [n, isoParaBR(u.data), u.r.carga, u.r.reps, u.r.rir];
+    })));
+
+    L.push("## Histórico, da mais recente para a mais antiga", "");
+    ex.forEach(function(e){
+      L.push("### " + isoParaBR(e.data) + " · " + (e.sessao || "") + " · " + (e.nome || ""), "");
+      L.push(tabela(["Exercício","Carga","Reps","RIR","Observação"], porExercicio(e.linhas).map(function(g){
+        const r = resumoExercicio(g.linhas); return r ? [g.nome, r.carga, r.reps, r.rir, r.obs] : null;
+      }).filter(Boolean)));
+    });
+
+    L.push("## Dados para restauração", "");
+    L.push("<!-- cdf-backup inicio fnv1a=" + assinatura + " execucoes=" + ex.length + " caracteres=" + json.length + " -->");
+    L.push("```json", json, "```");
+    L.push("<!-- cdf-backup fim -->", "");
+    return { nome: nome, texto: L.join("\n"), execucoes: ex.length, assinatura: assinatura };
+  }
+
+  /* Lê um backup em JSON puro ou em .md e confere a assinatura. */
+  function extrairBackup(texto){
+    const t = String(texto || "").replace(/^\uFEFF/, "").trim();
+    if(!t) return { erro: "Nada para importar." };
+    if(t[0] === "{" || t[0] === "["){
+      try{ return { bk: JSON.parse(t) }; }catch(e){ return { erro: "Não é um backup válido: " + e.message }; }
+    }
+    const i = t.indexOf("<!-- cdf-backup inicio");
+    if(i < 0) return { erro: "Não encontrei o bloco \"Dados para restauração\" neste arquivo." };
+    const fimCab = t.indexOf("-->", i);
+    const cab = t.slice(i, fimCab);
+    const mh = /fnv1a=([0-9a-f]{8})/.exec(cab), mn = /execucoes=(\d+)/.exec(cab), mc = /caracteres=(\d+)/.exec(cab);
+    const a = t.indexOf("```json", fimCab);
+    if(a < 0) return { erro: "O bloco de dados está incompleto." };
+    const ini = t.indexOf("\n", a);
+    const fim = t.indexOf("```", ini);
+    if(ini < 0 || fim < 0) return { erro: "O bloco de dados está incompleto." };
+    const json = t.slice(ini + 1, fim).replace(/\r/g, "").trim();
+    if(mc && json.length !== Number(mc[1])) return { erro: "O bloco de dados está truncado ou foi alterado (o tamanho não confere). Use o backup anterior." };
+    if(mh && fnv1a(json) !== mh[1]) return { erro: "O bloco de dados foi alterado (a assinatura não confere). Use o backup anterior." };
+    let bk;
+    try{ bk = JSON.parse(json); }catch(e){ return { erro: "O bloco de dados não abre: " + e.message }; }
+    if(mn && (!bk || !Array.isArray(bk.execucoes) || bk.execucoes.length !== Number(mn[1])))
+      return { erro: "O número de execuções não confere com a assinatura. Use o backup anterior." };
+    return { bk: bk };
+  }
+
+  /* Pasta automática (Chrome no computador): o app grava o .md direto numa
+     pasta escolhida uma vez, por exemplo dentro do OneDrive. No Android o
+     Chrome não oferece isso, e o arquivo vai para Downloads. */
+  const PASTA_OK = typeof window.showDirectoryPicker === "function" && !!window.isSecureContext && window.self === window.top && typeof indexedDB !== "undefined";
+  function kv(modoTx, fn){
+    return new Promise(function(ok, falha){
+      const r = indexedDB.open("caderno-de-ferro", 1);
+      r.onupgradeneeded = function(){ r.result.createObjectStore("kv"); };
+      r.onerror = function(){ falha(r.error); };
+      r.onsuccess = function(){
+        const tx = r.result.transaction("kv", modoTx); const st = tx.objectStore("kv");
+        const q = fn(st); tx.oncomplete = function(){ ok(q && q.result); }; tx.onerror = function(){ falha(tx.error); };
+      };
+    });
+  }
+  async function pastaBackup(){ if(!PASTA_OK) return null; try{ return (await kv("readonly", function(s){ return s.get("pasta"); })) || null; }catch(e){ return null; } }
+  async function gravarNaPasta(pasta, nome, texto, pedir){
+    let p = await pasta.queryPermission({ mode: "readwrite" });
+    if(p !== "granted" && pedir) p = await pasta.requestPermission({ mode: "readwrite" });
+    if(p !== "granted") return false;
+    const fh = await pasta.getFileHandle(nome, { create: true });
+    const w = await fh.createWritable(); await w.write(texto); await w.close();
+    return true;
+  }
+  function registrarUltimoBackup(nome, destino){
+    const d = new Date();
+    lsSet("cdf:ultimoBackup", { nome: nome, destino: destino, quando: d.getFullYear()+"-"+dois(d.getMonth()+1)+"-"+dois(d.getDate())+" "+dois(d.getHours())+"h"+dois(d.getMinutes()) });
+  }
+
+  /* Chamado ao encerrar a sessão (e por Ajustes > Backup). Escreve o estado
+     num elemento e devolve como o arquivo saiu. */
+  async function exportarMd(idSessao, st, caixa){
+    let md;
+    try{ md = await montarBackupMd(idSessao); }catch(e){ st.textContent = "Não consegui montar o backup (" + e.message + "). Use Ajustes > Backup."; return "erro"; }
+    const pasta = await pastaBackup();
+    if(pasta){
+      try{
+        if(await gravarNaPasta(pasta, md.nome, md.texto, false)){
+          registrarUltimoBackup(md.nome, "pasta " + pasta.name);
+          st.textContent = "Backup salvo na pasta " + pasta.name + ": " + md.nome + " (" + md.execucoes + " execuções).";
+          return "pasta";
+        }
+        st.textContent = "O Chrome quer nova autorização para a pasta " + pasta.name + ".";
+        if(caixa){
+          const b = botao("Salvar o backup na pasta " + pasta.name, "", async function(){
+            try{
+              if(await gravarNaPasta(pasta, md.nome, md.texto, true)){
+                registrarUltimoBackup(md.nome, "pasta " + pasta.name);
+                st.textContent = "Backup salvo na pasta " + pasta.name + ": " + md.nome + "."; b.remove();
+              } else st.textContent = "Sem autorização. Baixe o backup pelo botão abaixo.";
+            }catch(e){ st.textContent = "Falhou (" + e.message + "). Baixe pelo botão abaixo."; }
+          });
+          caixa.appendChild(b);
+        }
+      }catch(e){ st.textContent = "A pasta " + pasta.name + " não respondeu (" + e.message + "). Vou baixar o arquivo."; }
+    }
+    const ok = baixar(md.nome, md.texto, "text/markdown;charset=utf-8");
+    if(ok){ registrarUltimoBackup(md.nome, "download"); }
+    st.textContent = (pasta ? st.textContent + " " : "") + (ok
+      ? "Backup baixado: " + md.nome + " (" + md.execucoes + " execuções), na pasta Downloads."
+      : "O download falhou. Use Ajustes > Backup.");
+    if(caixa){
+      const b2 = botao("Baixar o backup de novo", "ghost", function(){ baixar(md.nome, md.texto, "text/markdown;charset=utf-8"); });
+      caixa.appendChild(b2);
+    }
+    return ok ? "download" : "erro";
+  }
+
+  function telaBackup(){
+    const c = $("ajustes-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Backup"));
+    c.appendChild(el("h3",null,"Exportar"));
+    c.appendChild(el("p","note", modo === "claude"
+      ? "No claude.ai o download é bloqueado: use Copiar e cole num arquivo ou direto no outro aparelho, em Importar."
+      : "O app gera um backup em .md a cada sessão encerrada. Cada arquivo leva o programa em uso e todo o histórico, e sozinho restaura tudo."));
+    const ub = lsGet("cdf:ultimoBackup");
+    if(ub && ub.nome) c.appendChild(el("p","note","Último backup: " + ub.nome + " (" + (ub.destino || "") + ", " + isoParaBR(String(ub.quando || "").slice(0,10)) + String(ub.quando || "").slice(10) + ")."));
+    const be = el("div","btns");
+    if(podeBaixar()) be.appendChild(botao("Baixar backup agora", "", async function(){
+      const md = await montarBackupMd(null);
+      baixar(md.nome, md.texto, "text/markdown;charset=utf-8"); registrarUltimoBackup(md.nome, "download");
+      msg(c, md.execucoes + " execuções no arquivo " + md.nome + ".", "ok");
+    }));
+    be.appendChild(botao("Copiar backup", podeBaixar() ? "ghost" : "", async function(){
+      const btn = this; const md = await montarBackupMd(null);
+      copiar(md.texto, btn);
+      msg(c, md.execucoes + " execuções copiadas, em Markdown.", "ok");
+    }));
+    c.appendChild(be);
+
+    if(PASTA_OK && podeBaixar()){
+      c.appendChild(el("h3",null,"Pasta automática"));
+      const np = el("p","note","Verificando…"); c.appendChild(np);
+      const bp = el("div","btns"); c.appendChild(bp);
+      pastaBackup().then(function(p){
+        np.textContent = p
+          ? "Cada sessão encerrada grava o .md direto na pasta " + p.name + ". Se ela estiver dentro do OneDrive, o arquivo fica no computador e na nuvem."
+          : "Escolha uma vez uma pasta (por exemplo, OneDrive > Treinos > Backups) e cada sessão encerrada grava o .md nela, sem passar por Downloads.";
+        bp.appendChild(botao(p ? "Trocar a pasta" : "Escolher a pasta", "", async function(){
+          try{
+            const d = await window.showDirectoryPicker({ id: "cdf-backup", mode: "readwrite", startIn: "documents" });
+            await kv("readwrite", function(s){ return s.put(d, "pasta"); });
+            const md = await montarBackupMd(null);
+            await gravarNaPasta(d, md.nome, md.texto, true); registrarUltimoBackup(md.nome, "pasta " + d.name);
+            msg(c, "Pasta " + d.name + " escolhida. Primeiro backup gravado nela: " + md.nome + ".", "ok");
+          }catch(e){ if(e && e.name !== "AbortError") msg(c, "Não deu para usar a pasta: " + e.message, "err"); }
+        }));
+        if(p) bp.appendChild(botao("Esquecer a pasta", "ghost", async function(){
+          try{ await kv("readwrite", function(s){ return s.delete("pasta"); }); msg(c, "Pasta esquecida. Os backups voltam a ir para Downloads.", "ok"); }catch(e){}
+        }));
+      });
+    }
+
+    c.appendChild(el("h3",null,"Importar"));
+    c.appendChild(el("p","note","Escolha o arquivo de backup (.md ou .json) ou cole o texto. O app confere a assinatura antes de importar. Execuções com a mesma data e ficha são substituídas; as demais são somadas."));
+    const fi = el("input"); fi.type = "file"; fi.accept = ".md,.json,.txt,text/markdown,application/json,text/plain"; fi.style.marginTop = "6px";
+    c.appendChild(fi);
+    const ta = el("textarea","paste"); ta.placeholder = "Ou cole aqui o backup copiado"; ta.style.marginTop = "8px";
+    c.appendChild(ta);
+    const lab = el("label","chk"); const cb = el("input"); cb.type = "checkbox";
+    lab.appendChild(cb); lab.appendChild(document.createTextNode("Importar também o programa que vier no backup"));
+    c.appendChild(lab);
+    fi.addEventListener("change", function(){
+      const f = fi.files && fi.files[0]; if(!f) return;
+      const r = new FileReader(); r.onload = function(){ ta.value = String(r.result || ""); }; r.readAsText(f);
+    });
+    const bi = el("div","btns");
+    bi.appendChild(botao("Importar", "", async function(){
+      const lido = extrairBackup(ta.value);
+      if(lido.erro){ msg(c, lido.erro, "err"); return; }
+      const bk = lido.bk;
+      const lista = Array.isArray(bk) ? bk : (bk && bk.execucoes);
+      if(!Array.isArray(lista)){ msg(c, "Não encontrei a lista de execuções no backup.", "err"); return; }
+      let n = 0;
+      for(const ex of lista){
+        if(!ex || typeof ex.data !== "string" || !Array.isArray(ex.linhas)) continue;
+        const id = ex.id || (ex.data + "__" + (ex.sessao || "X"));
+        const doc = Object.assign({}, ex); delete doc.id;
+        try{ await salvarExecucao(id, doc); n++; }catch(e){}
+      }
+      let extra = "";
+      if(cb.checked && bk && bk.programa){
+        const erros = validarPrograma(bk.programa);
+        if(erros.length) extra = " O programa do backup não passou na validação e ficou de fora.";
+        else { try{ localStorage.setItem("cdf:programa", JSON.stringify(bk.programa)); extra = " Programa importado."; }catch(e){} }
+      }
+      msg(c, n + " execuções importadas." + extra + " Recarregando…", "ok");
+      setTimeout(function(){ location.reload(); }, 900);
+    }));
+    bi.appendChild(voltarBtn());
+    c.appendChild(bi);
+  }
+
+  async function telaCSV(){
+    const c = $("ajustes-inner"); c.textContent = "";
+    c.appendChild(el("h2",null,"Planilha (CSV)"));
+    const docs = await listarExecucoes();
+    const q = function(v){ v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g,'""') + '"' : v; };
+    const linhas = ["Data;Ficha;Grupo;Exercício;Série;Tipo;Carga;Unidade;Reps;RIR;Observação"];
+    docs.forEach(function(d){ (d.linhas || []).forEach(function(l){
+      linhas.push([l.data, l.ficha, l.grupo, l.exercicio, l.serie, l.tipo, l.carga, l.un, l.reps, l.rir, l.obs].map(q).join(";"));
+    }); });
+    const csv = linhas.join("\n");
+    c.appendChild(el("p","note", (linhas.length - 1) + " linhas, separadas por ponto e vírgula, no formato que o Excel em português abre direto."));
+    const pre = el("pre","log"); pre.textContent = linhas.slice(0, 40).join("\n") + (linhas.length > 40 ? "\n…" : ""); c.appendChild(pre);
+    const b = el("div","btns");
+    if(podeBaixar()) b.appendChild(botao("Baixar CSV", "", function(){ baixar("caderno-de-ferro-" + carimbo() + ".csv", "\ufeff" + csv, "text/csv;charset=utf-8"); }));
+    b.appendChild(botao("Copiar", podeBaixar() ? "ghost" : "", function(){ copiar(csv, this); }));
+    b.appendChild(voltarBtn());
+    c.appendChild(b);
+  }
+
+  /* ================= TEMA ================= */
+
+  const temaSalvo = lsGet("cdf:tema");
+  if(temaSalvo === "dark" || temaSalvo === "light"){
+    document.documentElement.setAttribute("data-theme", temaSalvo);
+    $("btn-tema").setAttribute("aria-pressed", String(temaSalvo==="dark"));
+  }
+  $("btn-tema").addEventListener("click", function(){
+    const cur = document.documentElement.getAttribute("data-theme");
+    const escuro = cur ? cur === "dark"
+      : (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    const novo = escuro ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", novo);
+    lsSet("cdf:tema", novo);
+    $("btn-tema").setAttribute("aria-pressed", String(novo==="dark"));
+  });
+
+  /* ================= BOOT ================= */
+
+  (function(){
+    const d = new Date();
+    $("hoje").textContent = DIAS[d.getDay()]+", "+d.getDate()+" de "+MESES[d.getMonth()]+" de "+d.getFullYear();
+  })();
+
+  (function(){
+    const L = $("links"); L.textContent = "";
+    LINKS.slice(0,2).forEach(function(l, i){
+      if(i) L.appendChild(document.createTextNode(" · "));
+      const a = el("a", null, l.nome); a.href = l.url; a.target = "_blank"; a.rel = "noopener";
+      a.style.color = "var(--accent)"; a.style.fontWeight = "600";
+      L.appendChild(a);
+    });
+    if(LINKS.length > 2) L.appendChild(document.createTextNode(" · os outros trimestres em Regras"));
+  })();
+
+  $("btn-regras").addEventListener("click", function(){ montarRegras(); abrirSheet("sheet-regras"); });
+  $("btn-ajustes").addEventListener("click", function(){ telaAjustes(); abrirSheet("sheet-ajustes"); });
+  $("btn-encerrar").addEventListener("click", encerrar);
+
+  const ultima = lsGet("cdf:ultima");
+  const inicial = (ultima && S.some(function(s){ return s.id===ultima; }) && lsGet("cdf:"+hojeISO+":"+ultima))
+    ? ultima : sessaoDoDia().id;
+  escolher(inicial);
+  pinta();
+
+  if(window.claude && typeof window.claude.use === "function"){
+    window.claude.use("db").then(function(d){
+      db = d;
+      if(db){ modo = "claude"; }
+      carregarHistorico();
+    }, function(){ carregarHistorico(); });
+  } else {
+    carregarHistorico();
+    /* Pede ao navegador que não apague os dados deste app por falta de espaço. */
+    try{ if(navigator.storage && navigator.storage.persist) navigator.storage.persist(); }catch(e){}
+    /* Instalado como app (servido por https), o service worker guarda o
+       arquivo para funcionar sem internet na academia. */
+    try{
+      const nativo = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
+      if(!nativo && "serviceWorker" in navigator && /^https?:$/.test(location.protocol)){
+        navigator.serviceWorker.register("sw.js").catch(function(){});
+      }
+    }catch(e){}
+  }
+
+  if(navigator.wakeLock && navigator.wakeLock.request){
+    let lock = null;
+    const pedir = function(){
+      navigator.wakeLock.request("screen").then(function(l){ lock = l; l.addEventListener && l.addEventListener("release", function(){ lock = null; }); }, function(){});
+    };
+    pedir();
+    document.addEventListener("visibilitychange", function(){
+      if(document.visibilityState === "visible" && !lock) pedir();
+    });
+  }
+})();
+</script>
+</body>
+</html>
