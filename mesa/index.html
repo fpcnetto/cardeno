@@ -440,6 +440,7 @@
       "janelaDias": 21,
       "minDiasRegistrados": 14,
       "minPesagens": 12,
+      "carenciaDias": 14,
       "kcalPorKg": 7700,
       "fracao": 0.5,
       "passoMax": 150,
@@ -1286,6 +1287,9 @@
         });
       });
     });
+    (Array.isArray(p.fases) ? p.fases : []).forEach(function(f, k){
+      if(f && f.kcalPorKg != null && !(isFinite(Number(f.kcalPorKg)) && Number(f.kcalPorKg) >= 1000 && Number(f.kcalPorKg) <= 12000)) e.push("fase " + (f.nome || k + 1) + ": kcalPorKg precisa ser um número entre 1.000 e 12.000");
+    });
     return e;
   }
   function carregarPlano(){
@@ -1306,7 +1310,8 @@
 
   function salvarDias(){ lsSet("mdf:dias", dias); }
   function dia(d){ return dias[d] || null; }
-  function garantirDia(d){ if(!dias[d]) dias[d] = { r:{} }; if(!dias[d].r) dias[d].r = {}; return dias[d]; }
+  /* Toda escrita num dia passa por aqui; "u" guarda a hora da última mudança, para a importação não trocar um dia mais novo por um mais velho. */
+  function garantirDia(d){ if(!dias[d]) dias[d] = { r:{} }; if(!dias[d].r) dias[d].r = {}; dias[d].u = new Date().toISOString(); return dias[d]; }
 
   /* ================= NUTRIÇÃO ================= */
   function macros(a, q){
@@ -1328,6 +1333,8 @@
     return PLANO.tipos[t] ? t : Object.keys(PLANO.tipos)[0];
   }
   function faseDe(d){ return (PLANO.fases || []).find(function(f){ return d >= f.de && d <= f.ate; }) || null; }
+  /* Densidade usada no ajuste do gasto: a da fase, quando o plano a define; senão, a geral. Assim a troca do T2 acontece sozinha na data. */
+  function densidadeDe(d){ const f = faseDe(d); if(f && isFinite(f.kcalPorKg) && Number(f.kcalPorKg) > 0) return Number(f.kcalPorKg); return Number((PLANO.gasto || {}).kcalPorKg || 7700); }
   function gastoAtual(){ return gasto && gasto.valor ? gasto.valor : (perfil && perfil.gastoInicial ? perfil.gastoInicial : null); }
   function metaDe(d){
     const g = gastoAtual(); if(!g) return null;
@@ -1419,10 +1426,19 @@
   }
   function estimarGasto(ate){
     const cfg = PLANO.gasto || {};
-    const N = cfg.janelaDias || 21, ini = somaDias(ate, -(N - 1));
+    const N = cfg.janelaDias || 21, ini0 = somaDias(ate, -(N - 1));
+    /* Carência: os primeiros dias do perfil e de cada fase ficam fora da conta. A mudança de dieta mexe na água e no
+       glicogênio, e a balança mostra isso como ganho ou perda de tecido; sem a carência, a Mesa corrigiria o gasto
+       na direção errada nas primeiras semanas. */
+    const car = isFinite(cfg.carenciaDias) ? Number(cfg.carenciaDias) : 14;
+    let ini = ini0;
+    if(car > 0){
+      if(perfil && perfil.desde){ const m = somaDias(perfil.desde, car); if(m > ini) ini = m; }
+      const fa = faseDe(ate); if(fa && fa.de){ const m = somaDias(fa.de, car); if(m > ini) ini = m; }
+    }
     const ps = pesagens().filter(function(p){ return p.d >= ini && p.d <= ate; });
-    const comp = []; for(let i = 0; i < N; i++){ const d = somaDias(ini, i); if(dias[d] && diaCompleto(d)) comp.push(d); }
-    const out = { ini:ini, fim:ate, pesagens:ps.length, diasRegistrados:comp.length, valido:false };
+    const comp = []; for(let d = ini; d <= ate; d = somaDias(d, 1)){ if(dias[d] && diaCompleto(d)) comp.push(d); }
+    const out = { ini:ini, fim:ate, pesagens:ps.length, diasRegistrados:comp.length, valido:false, carenciaAte: ini > ini0 ? somaDias(ini, -1) : null, kcalPorKg: densidadeDe(ate) };
     if(ps.length < (cfg.minPesagens || 12) || comp.length < (cfg.minDiasRegistrados || 14)) return out;
     const xs = ps.map(function(p){ return difDias(ini, p.d); }), ys = ps.map(function(p){ return p.kg; });
     const mx = xs.reduce(function(a,b){ return a+b; },0)/xs.length, my = ys.reduce(function(a,b){ return a+b; },0)/ys.length;
@@ -1430,7 +1446,7 @@
     const incl = sxx ? sxy / sxx : 0;
     const ingest = comp.reduce(function(s, d){ return s + totaisDia(planoDoDia(d)).reg.kcal; }, 0) / comp.length;
     out.inclinacao = incl; out.ingestao = ingest; out.kgSemana = incl * 7;
-    out.observado = ingest - incl * (cfg.kcalPorKg || 7700);
+    out.observado = ingest - incl * out.kcalPorKg;
     out.valido = true;
     return out;
   }
@@ -1500,7 +1516,7 @@
       const idade = lerNum(iI.value), alt = lerNum(iA.value), gi = lerNum(iG.value);
       if(!(idade > 10 && idade < 100) || !(alt > 120 && alt < 230) || !(gi > 1000 && gi < 6000)){ msg(card, "Confira os números: idade em anos, altura em centímetros e gasto em kcal.", "err"); return; }
       perfil = { sexo:sexo, idade:idade, altura:alt, gastoInicial:Math.round(gi), desde:HOJE };
-      lsSet("mdf:perfil", perfil); gasto = null; revisarGasto(); render();
+      lsSet("mdf:perfil", perfil); lsSet("mdf:perfilSalvoEm", new Date().toISOString()); gasto = null; revisarGasto(); render();
     }));
     bs.appendChild(botao("Tenho um backup", "ghost", telaBackup));
     card.appendChild(bs);
@@ -1784,11 +1800,17 @@
     c.appendChild(el("p", "info", "Gasto total usado na meta: " + (ga ? num(ga) + " kcal" : "defina o perfil") + ". Taxa basal pela fórmula de Mifflin, com a tendência do peso: " + (mifflin(t) ? num(mifflin(t)) + " kcal" : "sem pesagem") + ". A taxa basal é referência; quem define a meta é o gasto observado."));
     c.appendChild(el("h3", null, "Peso: pontos diários e linha de tendência"));
     c.appendChild(graficoPeso());
+    const faH = faseDe(HOJE), kgc = densidadeDe(HOJE);
+    if(faH && faH.ajuste && faH.ajuste.tipo === "kcal" && Number(faH.ajuste.valor)){
+      const ritmo = Number(faH.ajuste.valor) / kgc * 7;
+      c.appendChild(el("p", "note", "Nesta fase (" + faH.nome + "), a meta soma " + num(Number(faH.ajuste.valor)) + " kcal ao gasto de trabalho, e o ajuste semanal persegue um ritmo de " + (ritmo > 0 ? "+" : "") + num(ritmo, 2) + " kg por semana (" + num(Number(faH.ajuste.valor)) + " ÷ " + num(kgc) + " × 7). O gasto mostrado é o valor de trabalho desse controle e pode ficar acima ou abaixo do gasto real; a composição do ganho fica com a bioimpedância."));
+    }
     const est = estimarGasto(somaDias(HOJE, -1));
     c.appendChild(el("h3", null, "Últimos " + ((PLANO.gasto || {}).janelaDias || 21) + " dias"));
     c.appendChild(el("p", "info", est.valido
       ? "Média ingerida nos dias completos: " + num(est.ingestao) + " kcal. Peso variando " + num(est.kgSemana, 2) + " kg por semana. Gasto observado: " + num(est.observado) + " kcal. A meta anda metade da distância a cada semana, com teto de " + ((PLANO.gasto || {}).passoMax || 150) + " kcal."
       : "Ainda sem dados suficientes: " + est.pesagens + " pesagens e " + est.diasRegistrados + " dias com registro completo, de " + ((PLANO.gasto || {}).minPesagens || 12) + " e " + ((PLANO.gasto || {}).minDiasRegistrados || 14) + " necessários. Até lá vale o gasto inicial."));
+    if(est.carenciaAte && est.carenciaAte >= somaDias(HOJE, -((PLANO.gasto || {}).janelaDias || 21))) c.appendChild(el("p", "note", "Carência: os " + (isFinite((PLANO.gasto || {}).carenciaDias) ? (PLANO.gasto || {}).carenciaDias : 14) + " primeiros dias do perfil e de cada fase ficam fora da conta, porque a dieta nova mexe na água e no glicogênio, e a balança mostraria isso como ganho ou perda de tecido. A conta usa os dias a partir de " + br(est.ini) + "."));
     if(gasto && gasto.historico && gasto.historico.length){
       c.appendChild(el("h3", null, "Ajustes feitos"));
       const tb = el("table", "tab"); const th = el("tr"); ["Data","De","Para","Observado","kg/sem."].forEach(function(h, i){ th.appendChild(el("th", i ? "n" : null, h)); }); tb.appendChild(th);
@@ -1797,7 +1819,7 @@
     }
     c.appendChild(el("h3", null, "Cintura, toda semana"));
     const cr = el("div", "peso-row"); const ci = el("input", "txt"); ci.inputMode = "decimal"; ci.placeholder = "cm, no umbigo"; cr.appendChild(ci);
-    cr.appendChild(botao("Salvar", "", function(){ const v = lerNum(ci.value); if(!(v > 40 && v < 200)) return; cintura = cintura.filter(function(x){ return x.d !== HOJE; }); cintura.push({ d:HOJE, cm:v }); cintura.sort(function(a, b){ return a.d < b.d ? -1 : 1; }); lsSet("mdf:cintura", cintura); telaGasto(); }));
+    cr.appendChild(botao("Salvar", "", function(){ const v = lerNum(ci.value); if(!(v > 40 && v < 200)) return; cintura = cintura.filter(function(x){ return x.d !== HOJE; }); cintura.push({ d:HOJE, cm:v, u:new Date().toISOString() }); cintura.sort(function(a, b){ return a.d < b.d ? -1 : 1; }); lsSet("mdf:cintura", cintura); telaGasto(); }));
     c.appendChild(cr);
     if(cintura.length) c.appendChild(el("p", "info", cintura.slice(-6).map(function(x){ return brCurta(x.d) + ": " + num(x.cm, 1) + " cm"; }).join(" · ")));
     c.appendChild(el("h3", null, "Bioimpedância, todo mês"));
@@ -1808,7 +1830,7 @@
     c.appendChild(g);
     c.appendChild(botao("Salvar bioimpedância", "", function(){
       const d = campos.data.value.trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
-      const reg = { d:d, peso:lerNum(campos.peso.value), mme:lerNum(campos.mme.value), gordura:lerNum(campos.gordura.value), tmb:lerNum(campos.tmb.value) };
+      const reg = { d:d, peso:lerNum(campos.peso.value), mme:lerNum(campos.mme.value), gordura:lerNum(campos.gordura.value), tmb:lerNum(campos.tmb.value), u:new Date().toISOString() };
       bioimp = bioimp.filter(function(x){ return x.d !== d; }); bioimp.push(reg); bioimp.sort(function(a, b){ return a.d < b.d ? -1 : 1; }); lsSet("mdf:bio", bioimp); telaGasto();
     }));
     if(bioimp.length){
@@ -1845,7 +1867,7 @@
   }
 
   function montarBackup(){
-    return { app:"mesa-de-ferro", formato:1, exportadoEm:new Date().toISOString(), perfil:perfil, planoOrigem:CARREGADO.origem, plano:PLANO, dias:dias, gasto:gasto, bio:bioimp, cintura:cintura };
+    return { app:"mesa-de-ferro", formato:1, exportadoEm:new Date().toISOString(), perfil:perfil, planoOrigem:CARREGADO.origem, plano:PLANO, dias:dias, gasto:gasto, bio:bioimp, cintura:cintura, perfilSalvoEm:lsGet("mdf:perfilSalvoEm") || null, planoSalvoEm:lsGet("mdf:planoSalvoEm") || null };
   }
   function celula(v){ return String(v == null ? "" : v).replace(/\|/g, "\\|").replace(/[\r\n]+/g, " ").trim(); }
   function tabela(cab, linhas){
@@ -1985,7 +2007,7 @@
       const idade = lerNum(f.idade.value), alt = lerNum(f.altura.value), gi = lerNum(f.gastoInicial.value);
       if(!(idade > 10 && idade < 100) || !(alt > 120 && alt < 230) || !(gi > 1000 && gi < 6000)){ msg(c, "Confira os números: idade em anos, altura em centímetros e gasto em kcal.", "err"); return; }
       perfil = Object.assign({ desde:HOJE }, perfil || {}, { sexo:sexo, idade:idade, altura:alt, gastoInicial:Math.round(gi) });
-      lsSet("mdf:perfil", perfil); if(cb.checked){ gasto = null; lsSet("mdf:gasto", null); } revisarGasto(); msg(c, "Perfil salvo.", "ok"); render();
+      lsSet("mdf:perfil", perfil); lsSet("mdf:perfilSalvoEm", new Date().toISOString()); if(cb.checked){ gasto = null; lsSet("mdf:gasto", null); } revisarGasto(); msg(c, "Perfil salvo.", "ok"); render();
     }));
     c.appendChild(fecharBtn());
   }
@@ -1997,7 +2019,7 @@
     b.appendChild(botao("Validar e salvar", "", function(){
       let p; try{ p = JSON.parse(ta.value); }catch(e){ msg(c, "JSON inválido: " + e.message, "err"); return; }
       const e = validarPlano(p); if(e.length){ msg(c, "Não salvei. Corrija: " + e.slice(0, 6).join("; ") + (e.length > 6 ? "; e mais " + (e.length - 6) : ""), "err"); return; }
-      lsSet("mdf:plano", p); msg(c, "Plano salvo. Recarregando…", "ok"); setTimeout(function(){ location.reload(); }, 700);
+      lsSet("mdf:plano", p); lsSet("mdf:planoSalvoEm", new Date().toISOString()); msg(c, "Plano salvo. Recarregando…", "ok"); setTimeout(function(){ location.reload(); }, 700);
     }));
     b.appendChild(botao("Copiar", "ghost", function(){ copiar(ta.value, this); }));
     if(CARREGADO.origem !== "padrão do arquivo") b.appendChild(botao("Voltar ao plano do arquivo", "ghost", function(){ localStorage.removeItem("mdf:plano"); location.reload(); }));
@@ -2031,15 +2053,33 @@
     bi.appendChild(botao("Importar", "", function(){
       const lido = extrairBackup(ta.value); if(lido.erro){ msg(c, lido.erro, "err"); return; }
       const bk = lido.bk; if(!bk || bk.app !== "mesa-de-ferro" || typeof bk.dias !== "object"){ msg(c, "Este backup não é da Mesa de Ferro.", "err"); return; }
-      let n = 0; Object.keys(bk.dias).forEach(function(d){ if(/^\d{4}-\d{2}-\d{2}$/.test(d)){ dias[d] = bk.dias[d]; n++; } }); salvarDias();
-      const junta = function(atual, novo){ const m = {}; (atual || []).concat(novo || []).forEach(function(x){ if(x && x.d) m[x.d] = x; }); return Object.keys(m).sort().map(function(k){ return m[k]; }); };
+      let n = 0, mant = 0;
+      Object.keys(bk.dias).forEach(function(d){
+        if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return;
+        const loc = dias[d], nov = bk.dias[d];
+        if(loc && loc.u && (!nov || !nov.u || String(nov.u) < String(loc.u))){ mant++; return; }
+        dias[d] = nov; n++;
+      });
+      salvarDias();
+      /* Em todas as categorias, vale a mesma regra dos dias: o registro do aparelho fica quando foi mudado depois do registro do arquivo. */
+      const maisNovoAqui = function(loc, nov, uLoc, uNov){ return !!(loc && uLoc && (!nov || !uNov || String(uNov) < String(uLoc))); };
+      let medMant = 0;
+      const junta = function(atual, novo){ const m = {}; (atual || []).forEach(function(x){ if(x && x.d) m[x.d] = x; }); (novo || []).forEach(function(x){ if(!x || !x.d) return; const l = m[x.d]; if(maisNovoAqui(l, x, l && l.u, x.u)){ medMant++; return; } m[x.d] = x; }); return Object.keys(m).sort().map(function(k){ return m[k]; }); };
       bioimp = junta(bioimp, bk.bio); lsSet("mdf:bio", bioimp); cintura = junta(cintura, bk.cintura); lsSet("mdf:cintura", cintura);
       if(bk.gasto && (!gasto || String(bk.gasto.atualizadoEm) >= String(gasto.atualizadoEm))){ gasto = bk.gasto; lsSet("mdf:gasto", gasto); }
       let extra = "";
       if(cb.checked){
-        if(bk.perfil){ perfil = bk.perfil; lsSet("mdf:perfil", perfil); extra += " Perfil importado."; }
-        if(bk.plano && !bk.plano.modelo && validarPlano(bk.plano).length === 0){ lsSet("mdf:plano", bk.plano); extra += " Plano importado."; }
+        if(bk.perfil){
+          if(maisNovoAqui(perfil, bk.perfil, lsGet("mdf:perfilSalvoEm"), bk.perfilSalvoEm)) extra += " Perfil mantido: o do aparelho foi salvo depois.";
+          else { perfil = bk.perfil; lsSet("mdf:perfil", perfil); lsSet("mdf:perfilSalvoEm", bk.perfilSalvoEm || null); extra += " Perfil importado."; }
+        }
+        if(bk.plano && !bk.plano.modelo && validarPlano(bk.plano).length === 0){
+          if(maisNovoAqui(lsGet("mdf:plano"), bk.plano, lsGet("mdf:planoSalvoEm"), bk.planoSalvoEm)) extra += " Plano mantido: o do aparelho foi salvo depois.";
+          else { lsSet("mdf:plano", bk.plano); lsSet("mdf:planoSalvoEm", bk.planoSalvoEm || null); extra += " Plano importado."; }
+        }
       }
+      if(medMant) extra = " " + medMant + (medMant === 1 ? " medida mantida" : " medidas mantidas") + " (cintura ou bioimpedância), porque o aparelho tinha versão mais nova." + extra;
+      if(mant) extra = " " + mant + (mant === 1 ? " dia mantido" : " dias mantidos") + ", porque o aparelho tinha versão mais nova." + extra;
       msg(c, n + " dias importados." + extra + " Recarregando…", "ok"); setTimeout(function(){ location.reload(); }, 900);
     }));
     c.appendChild(bi); c.appendChild(fecharBtn());
@@ -2092,6 +2132,16 @@
     card.appendChild(el("p", "info", "Este arquivo traz um cardápio de exemplo. Para carregar o seu, abra Ajustes > Backup > Importar, escolha o backup e marque \"Importar também perfil e plano\"."));
     $("aviso").appendChild(card);
   }
+  (function(){
+    const fs = PLANO.fases || [], fa = faseDe(HOJE), idx = fa ? fs.indexOf(fa) : -1;
+    if(idx > 0 && difDias(fa.de, HOJE) < 7){
+      const car = isFinite((PLANO.gasto || {}).carenciaDias) ? Number(PLANO.gasto.carenciaDias) : 14;
+      const aj = fa.ajuste || {}, kg = densidadeDe(HOJE);
+      let txt = aj.tipo === "pct" ? "A meta passa a ser o gasto de trabalho " + (Number(aj.valor) < 0 ? "menos " : "mais ") + num(Math.abs(Number(aj.valor))) + "%." : (Number(aj.valor) ? "A meta passa a ser o gasto de trabalho " + (Number(aj.valor) > 0 ? "mais " : "menos ") + num(Math.abs(Number(aj.valor))) + " kcal; com a densidade de " + num(kg) + " kcal por quilo, o ajuste semanal persegue " + (Number(aj.valor) > 0 ? "+" : "") + num(Number(aj.valor) / kg * 7, 2) + " kg por semana." : "A meta volta a ser o próprio gasto de trabalho, em manutenção.");
+      txt += " Nos " + car + " primeiros dias da fase, o gasto não se ajusta (carência); a conta volta a partir de " + br(somaDias(fa.de, car)) + ".";
+      const card = el("section", "card"); card.appendChild(el("h2", null, "Fase nova desde " + br(fa.de) + ": " + fa.nome)); card.appendChild(el("p", "info", txt)); $("aviso").appendChild(card);
+    }
+  })();
   const rev = revisarGasto();
   if(rev && rev.mudou){
     const a = $("aviso"); const card = el("section", "card");
