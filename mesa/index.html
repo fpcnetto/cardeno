@@ -192,6 +192,15 @@
 
   /* steppers */
   .field{margin-top:14px}
+  .troca{margin:0 0 12px}
+  .troca > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
+  .troca select, .troca-outro input, .troca-outro select{width:100%; min-height:48px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--ink); font:inherit; font-size:15px; padding:0 12px}
+  .troca-outro{display:grid; gap:8px; margin-top:8px}
+  .unid{margin:4px 0 8px}
+  .unid select{width:100%; min-height:44px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--ink); font:inherit; font-size:15px; padding:0 12px}
+  .unid .why{margin-top:4px}
+  .troca-outro[hidden]{display:none}
+  .ex-title .subst{display:block; font-size:12px; color:var(--warn); margin-top:2px}
   .field > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
   .stepper{display:flex; align-items:stretch; gap:8px}
   .stepper button{
@@ -409,6 +418,7 @@
   <div id="aviso"></div>
   <section class="card" id="resumo"></section>
   <section class="card" id="peso"></section>
+  <section class="card" id="caminhada"></section>
   <div id="refeicoes"></div>
   <div class="row-btns"><button class="btn ghost" id="btn-add-ref" type="button">+ Refeição extra</button></div>
   <p class="status" id="status"></p>
@@ -1494,7 +1504,7 @@
     const rot = el("div", null, diaAtual === HOJE ? "Hoje" : (diaAtual === somaDias(HOJE, -1) ? "Ontem" : DIAS[deIso(diaAtual).getDay()]));
     $("dia-rot").appendChild(rot); $("dia-rot").appendChild(el("small", null, br(diaAtual)));
     $("dia-prox").disabled = diaAtual >= HOJE;
-    renderSetup(); renderResumo(); renderPeso(); renderRefeicoes(); renderDock();
+    renderSetup(); renderResumo(); renderPeso(); renderCaminhada(); renderRefeicoes(); renderDock();
   }
 
   function renderSetup(){
@@ -1581,6 +1591,138 @@
       + (bm ? "Taxa basal pela fórmula (Mifflin), referência: " + num(bm) + " kcal. " : "")
       + (ga ? "Gasto total que define a meta: " + num(ga) + " kcal." : "");
     c.appendChild(info);
+  }
+
+  /* CAMINHADA MATINAL (desde 14/11/2026). Só registro: não muda a meta. A
+     caminhada faz parte da rotina desde antes do perfil, e o gasto adaptativo
+     já a inclui; somar as calorias do relógio contaria a mesma atividade duas
+     vezes. Serve para ler o gasto (mudança real de atividade) e para a revisão
+     de validação. Fica em dias[d].cam: min, km, passos, fc, kcal, fonte. */
+  function textoCaminhada(cm){
+    if(!cm) return "";
+    const p = [];
+    if(isFinite(cm.min)) p.push(num(cm.min) + " min");
+    if(isFinite(cm.km)) p.push(num(cm.km, 1) + " km");
+    if(isFinite(cm.passos)) p.push(num(cm.passos) + " passos");
+    if(isFinite(cm.fc)) p.push("FC média " + num(cm.fc));
+    if(isFinite(cm.kcal)) p.push(num(cm.kcal) + " kcal no relógio");
+    return p.join(" · ");
+  }
+  function renderCaminhada(){
+    const c = $("caminhada"); if(!c) return; c.textContent = "";
+    const reg = dia(diaAtual), cm = reg && reg.cam;
+    c.appendChild(el("h2", null, "Caminhada matinal"));
+    const g = el("div", "grid2"), campos = {};
+    [["min","Duração (min)"],["km","Distância (km)"],["passos","Passos"],["fc","FC média (bpm)"],["kcal","kcal do relógio"]].forEach(function(f){
+      const w = el("div"); w.appendChild(el("label", null, f[1]));
+      const i = el("input", "txt"); i.inputMode = "decimal"; i.id = "cam-" + f[0];
+      if(cm && isFinite(cm[f[0]])) i.value = String(cm[f[0]]).replace(".", ",");
+      campos[f[0]] = i; w.appendChild(i); g.appendChild(w);
+    });
+    c.appendChild(g);
+    const b = el("div", "btns");
+    b.appendChild(botao(cm ? "Atualizar" : "Salvar caminhada", "", function(){
+      const v = {};
+      Object.keys(campos).forEach(function(k){ if(!String(campos[k].value).trim()) return; const x = lerNum(campos[k].value); if(isFinite(x) && x >= 0) v[k] = k === "km" ? Math.round(x * 100) / 100 : Math.round(x); });
+      if(!(v.min > 0)){ msg(c, "Informe ao menos a duração, em minutos.", "err"); campos.min.focus(); return; }
+      if(v.min > 300 || (v.km != null && v.km > 40) || (v.fc != null && (v.fc < 40 || v.fc > 220)) || (v.kcal != null && v.kcal > 3000)){ msg(c, "Algum número fugiu do plausível. Confira duração, distância, frequência e calorias.", "err"); return; }
+      const r = garantirDia(diaAtual); r.cam = Object.assign(v, { fonte: "manual" }); salvarDias(); render();
+    }));
+    b.appendChild(botao("Importar do Samsung Health", "ghost", telaSamsung));
+    if(cm) b.appendChild(botao("Apagar", "ghost", function(){ const r = garantirDia(diaAtual); delete r.cam; salvarDias(); render(); }));
+    c.appendChild(b);
+    c.appendChild(el("p", "info", (cm ? "Registrada" + (cm.fonte && cm.fonte !== "manual" ? " pelo " + cm.fonte : "") + ": " + textoCaminhada(cm) + ". " : "")
+      + "Só registro: a caminhada não muda a meta do dia, porque o gasto que a define já inclui a sua rotina."));
+  }
+
+  /* Importação do Samsung Health. O app no navegador não lê os dados de saúde
+     do Android; o caminho é o arquivo que o próprio Samsung Health gera em
+     "Baixar dados pessoais". Lê o CSV principal de exercícios
+     (com.samsung.shealth.exercise.<data>.csv), pega as caminhadas (tipo 1001)
+     que começaram entre 4h e 12h e soma as de cada manhã. O horário do arquivo
+     vem em UTC, com o fuso na coluna time_offset. */
+  function lerCsvLinha(l){
+    const out = []; let cur = "", q = false;
+    for(let i = 0; i < l.length; i++){
+      const ch = l[i];
+      if(q){ if(ch === '"'){ if(l[i+1] === '"'){ cur += '"'; i++; } else q = false; } else cur += ch; }
+      else if(ch === '"') q = true; else if(ch === ","){ out.push(cur); cur = ""; } else cur += ch;
+    }
+    out.push(cur); return out;
+  }
+  function instanteLocal(ini, off){
+    ini = String(ini == null ? "" : ini).trim(); let ms = null;
+    if(/^\d{11,}$/.test(ini)) ms = Number(ini);
+    else { const m = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?/.exec(ini); if(m) ms = Date.UTC(+m[1], +m[2]-1, +m[3], +m[4], +m[5], +(m[6] || 0)); }
+    if(ms == null || !isFinite(ms)) return null;
+    const o = /UTC([+-])(\d{2}):?(\d{2})/.exec(String(off || ""));
+    if(o){ const d = new Date(ms + (o[1] === "-" ? -1 : 1) * (Number(o[2]) * 60 + Number(o[3])) * 60000);
+      return { data: d.getUTCFullYear() + "-" + dois(d.getUTCMonth()+1) + "-" + dois(d.getUTCDate()), hora: d.getUTCHours() }; }
+    const d = new Date(ms); return { data: iso(d), hora: d.getHours() };
+  }
+  function caminhadasDoSamsung(texto){
+    const linhas = String(texto || "").replace(/^\uFEFF/, "").split(/\r?\n/).filter(function(l){ return l.trim(); });
+    const hi = linhas.findIndex(function(l){ return /exercise_type/.test(l) && /start_time/.test(l) && /duration/.test(l); });
+    if(hi < 0) return { erro: "Este arquivo não tem as colunas de exercício. Escolha o com.samsung.shealth.exercise com a data no nome, sem hr_zone, extension ou weather." };
+    const cab = lerCsvLinha(linhas[hi]).map(function(x){ return x.trim(); });
+    const col = function(n){ return cab.findIndex(function(h){ return h === n || h.slice(-(n.length + 1)) === "." + n; }); };
+    const iT = col("exercise_type"), iS = col("start_time"), iD = col("duration"), iK = col("distance"), iC = col("calorie"), iF = col("mean_heart_rate"), iO = col("time_offset");
+    const porDia = {}; let lidas = 0;
+    for(let k = hi + 1; k < linhas.length; k++){
+      const v = lerCsvLinha(linhas[k]);
+      if(String(v[iT] || "").trim() !== "1001") continue;
+      const t = instanteLocal(v[iS], iO >= 0 ? v[iO] : ""); if(!t || t.hora < 4 || t.hora >= 12) continue;
+      const min = Number(v[iD]) / 60000; if(!(min > 0)) continue;
+      lidas++;
+      const a = porDia[t.data] || (porDia[t.data] = { min: 0, km: 0, kcal: 0, fcMin: 0, minFc: 0, sessoes: 0 });
+      a.min += min; a.sessoes++;
+      const km = iK >= 0 ? Number(v[iK]) / 1000 : NaN; if(isFinite(km) && km > 0) a.km += km;
+      const kc = iC >= 0 ? Number(v[iC]) : NaN; if(isFinite(kc) && kc > 0) a.kcal += kc;
+      const fc = iF >= 0 ? Number(v[iF]) : NaN; if(isFinite(fc) && fc > 0){ a.fcMin += fc * min; a.minFc += min; }
+    }
+    return { dias: porDia, lidas: lidas };
+  }
+  function aplicarSamsung(r){
+    const limite = perfil && perfil.desde ? perfil.desde : somaDias(HOJE, -30);
+    let novos = 0, mantidos = 0, fora = 0;
+    Object.keys(r.dias).sort().forEach(function(d){
+      if(d < limite || d > HOJE){ fora++; return; }
+      const atualCam = dias[d] && dias[d].cam;
+      if(atualCam && atualCam.fonte === "manual"){ mantidos++; return; }
+      const a = r.dias[d];
+      const cam = { min: Math.round(a.min), fonte: "Samsung Health", sessoes: a.sessoes };
+      if(a.km > 0) cam.km = Math.round(a.km * 100) / 100;
+      if(a.kcal > 0) cam.kcal = Math.round(a.kcal);
+      if(a.minFc > 0) cam.fc = Math.round(a.fcMin / a.minFc);
+      garantirDia(d).cam = cam; novos++;
+    });
+    salvarDias();
+    return { novos: novos, mantidos: mantidos, fora: fora };
+  }
+  function telaSamsung(){
+    const c = folha("Caminhadas do Samsung Health");
+    c.appendChild(el("p", "note", "No Samsung Health, em Configurações, use \"Baixar dados pessoais\" (o nome muda um pouco conforme a versão). Ele gera uma pasta, ou um .zip, com arquivos CSV. Escolha abaixo o com.samsung.shealth.exercise que termina com a data, sem hr_zone, extension ou weather no nome; se vier em .zip, abra-o antes no gerenciador de arquivos."));
+    c.appendChild(el("p", "note", "Entram as caminhadas que começaram entre 4h e 12h, a partir do início do perfil, somadas por manhã. Dia com caminhada lançada à mão fica como está. O arquivo traz todo o seu histórico de saúde: não o envie a ninguém e apague a pasta depois da importação."));
+    const inp = el("input"); inp.type = "file"; inp.accept = ".csv,text/csv,text/comma-separated-values,text/plain"; inp.id = "samsung-arquivo";
+    c.appendChild(inp);
+    inp.addEventListener("change", function(){
+      const f = inp.files && inp.files[0]; if(!f) return;
+      const fr = new FileReader();
+      fr.onload = function(){ importarSamsungTexto(c, String(fr.result || "")); };
+      fr.readAsText(f);
+    });
+    c.appendChild(fecharBtn());
+  }
+  function importarSamsungTexto(c, texto){
+    const r = caminhadasDoSamsung(texto);
+    if(r.erro){ msg(c, r.erro, "err"); return r; }
+    const a = aplicarSamsung(r);
+    msg(c, a.novos + (a.novos === 1 ? " manhã importada" : " manhãs importadas")
+      + (a.mantidos ? "; " + a.mantidos + " com registro manual, mantida" + (a.mantidos > 1 ? "s" : "") : "")
+      + (a.fora ? "; " + a.fora + " fora do período do perfil, ignorada" + (a.fora > 1 ? "s" : "") : "")
+      + ". " + r.lidas + " caminhada" + (r.lidas === 1 ? "" : "s") + " da manhã no arquivo.", a.novos ? "ok" : "err");
+    render();
+    return a;
   }
 
   function treinoNoCaderno(d){
@@ -1807,6 +1949,11 @@
     }
     const est = estimarGasto(somaDias(HOJE, -1));
     c.appendChild(el("h3", null, "Últimos " + ((PLANO.gasto || {}).janelaDias || 21) + " dias"));
+    (function(){
+      const jd = (PLANO.gasto || {}).janelaDias || 21; let n = 0, soma = 0;
+      for(let k = 1; k <= jd; k++){ const d = somaDias(HOJE, -k); const cm = dias[d] && dias[d].cam; if(cm && cm.min > 0){ n++; soma += cm.min; } }
+      c.appendChild(el("p", "info", "Caminhada matinal registrada em " + n + " de " + jd + " dias" + (n ? ", com média de " + num(soma / n) + " min" : "") + ". Ela não entra na conta do gasto; serve para explicar uma mudança no gasto observado, como uma semana sem caminhar."));
+    })();
     c.appendChild(el("p", "info", est.valido
       ? "Média ingerida nos dias completos: " + num(est.ingestao) + " kcal. Peso variando " + num(est.kgSemana, 2) + " kg por semana. Gasto observado: " + num(est.observado) + " kcal. A meta anda metade da distância a cada semana, com teto de " + ((PLANO.gasto || {}).passoMax || 150) + " kcal."
       : "Ainda sem dados suficientes: " + est.pesagens + " pesagens e " + est.diasRegistrados + " dias com registro completo, de " + ((PLANO.gasto || {}).minPesagens || 12) + " e " + ((PLANO.gasto || {}).minDiasRegistrados || 14) + " necessários. Até lá vale o gasto inicial."));
@@ -1898,9 +2045,9 @@
       L.push(tabela(["Refeição","Alimento","Quant.","kcal","P","C","G","Registrado"], linhas));
     }
     L.push("## Últimos 28 dias", "");
-    L.push(tabela(["Data","Tipo","Peso","Tendência","Meta","Registrado","P","C","G","Completo"], ds.slice(-28).reverse().map(function(d){
+    L.push(tabela(["Data","Tipo","Peso","Tendência","Meta","Registrado","P","C","G","Completo","Caminhada"], ds.slice(-28).reverse().map(function(d){
       const pl = planoDoDia(d), tt = totaisDia(pl);
-      return [br(d), (PLANO.tipos[pl.tipo] || {}).nome, dias[d].pe != null ? num(dias[d].pe, 1) : "", tr[d] != null ? num(tr[d], 1) : "", pl.meta != null ? num(pl.meta) : "", num(tt.reg.kcal), num(tt.reg.p), num(tt.reg.c), num(tt.reg.g), diaCompleto(d) ? "sim" : "não"];
+      return [br(d), (PLANO.tipos[pl.tipo] || {}).nome, dias[d].pe != null ? num(dias[d].pe, 1) : "", tr[d] != null ? num(tr[d], 1) : "", pl.meta != null ? num(pl.meta) : "", num(tt.reg.kcal), num(tt.reg.p), num(tt.reg.c), num(tt.reg.g), diaCompleto(d) ? "sim" : "não", dias[d].cam ? num(dias[d].cam.min) + " min" + (isFinite(dias[d].cam.km) ? " · " + num(dias[d].cam.km, 1) + " km" : "") : ""];
     })));
     L.push("## Dados para restauração", "");
     L.push("<!-- mdf-backup inicio fnv1a=" + ass + " dias=" + ds.length + " caracteres=" + json.length + " -->");
@@ -1982,7 +2129,7 @@
     [["Perfil", "Sexo, idade, altura e gasto inicial.", telaPerfil],
      ["Backup", "Baixar, copiar ou importar o .md completo; pasta automática no computador.", telaBackup],
      ["Plano", "Alimentos, cardápios, alavancas e fases em JSON, para editar à mão ou levar a uma IA.", telaPlano],
-     ["Planilha (CSV)", "Um dia por linha: peso, meta, registrado e macros.", telaCSV],
+     ["Planilha (CSV)", "Um dia por linha: peso, meta, registrado, macros e caminhada.", telaCSV],
      ["Tema claro ou escuro", "Alterna e guarda a escolha neste aparelho.", alternarTema]].forEach(function(m){
       const b = el("button", "menu-item"); b.type = "button"; const t = el("div"); t.appendChild(el("b", null, m[0])); t.appendChild(el("span", null, m[1])); b.appendChild(t);
       b.addEventListener("click", m[2]); c.appendChild(b);
@@ -2087,9 +2234,9 @@
   function telaCSV(){
     const c = folha("Planilha (CSV)");
     const q = function(v){ v = v == null ? "" : String(v); return /[;"\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v; };
-    const L = ["Data;Tipo;Peso;Tendencia;Meta;Registrado;Proteina;Carboidrato;Gordura;Completo"]; const tr = tendencia();
+    const L = ["Data;Tipo;Peso;Tendencia;Meta;Registrado;Proteina;Carboidrato;Gordura;Completo;Caminhada_min;Caminhada_km;Caminhada_FC;Caminhada_kcal_relogio"]; const tr = tendencia();
     Object.keys(dias).sort().forEach(function(d){ const pl = planoDoDia(d), tt = totaisDia(pl);
-      L.push([br(d), (PLANO.tipos[pl.tipo] || {}).nome, dias[d].pe != null ? String(dias[d].pe).replace(".", ",") : "", tr[d] != null ? tr[d].toFixed(1).replace(".", ",") : "", pl.meta, Math.round(tt.reg.kcal), Math.round(tt.reg.p), Math.round(tt.reg.c), Math.round(tt.reg.g), diaCompleto(d) ? "sim" : "não"].map(q).join(";")); });
+      L.push([br(d), (PLANO.tipos[pl.tipo] || {}).nome, dias[d].pe != null ? String(dias[d].pe).replace(".", ",") : "", tr[d] != null ? tr[d].toFixed(1).replace(".", ",") : "", pl.meta, Math.round(tt.reg.kcal), Math.round(tt.reg.p), Math.round(tt.reg.c), Math.round(tt.reg.g), diaCompleto(d) ? "sim" : "não"].concat((function(cm){ return cm ? [cm.min, isFinite(cm.km) ? String(cm.km).replace(".", ",") : "", isFinite(cm.fc) ? cm.fc : "", isFinite(cm.kcal) ? cm.kcal : ""] : ["", "", "", ""]; })(dias[d].cam)).map(q).join(";")); });
     const csv = L.join("\n");
     c.appendChild(el("p", "note", (L.length - 1) + " dias."));
     const b = el("div", "btns");
@@ -2155,7 +2302,7 @@
     const nativo = !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === "function" && window.Capacitor.isNativePlatform());
     if(!nativo && "serviceWorker" in navigator && /^https?:$/.test(location.protocol)) navigator.serviceWorker.register("sw.js").catch(function(){});
   }catch(e){}
-  window.__mdf = { planoDoDia:planoDoDia, totaisDia:totaisDia, estimarGasto:estimarGasto, equivalentes:equivalentes, montarBackupMd:montarBackupMd, extrairBackup:extrairBackup };
+  window.__mdf = { caminhadasDoSamsung:caminhadasDoSamsung, instanteLocal:instanteLocal, importarSamsungTexto:importarSamsungTexto, planoDoDia:planoDoDia, totaisDia:totaisDia, estimarGasto:estimarGasto, equivalentes:equivalentes, montarBackupMd:montarBackupMd, extrairBackup:extrairBackup };
 })();
 </script>
 </body>
