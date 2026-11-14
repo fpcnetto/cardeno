@@ -196,6 +196,9 @@
   .troca > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
   .troca select, .troca-outro input, .troca-outro select{width:100%; min-height:48px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--ink); font:inherit; font-size:15px; padding:0 12px}
   .troca-outro{display:grid; gap:8px; margin-top:8px}
+  .unid{margin:4px 0 8px}
+  .unid select{width:100%; min-height:44px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--ink); font:inherit; font-size:15px; padding:0 12px}
+  .unid .why{margin-top:4px}
   .troca-outro[hidden]{display:none}
   .ex-title .subst{display:block; font-size:12px; color:var(--warn); margin-top:2px}
   .field > label{display:block; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); margin-bottom:6px; font-weight:600}
@@ -1584,6 +1587,17 @@
     Object.keys(p.mapaDia || {}).forEach(function(d){
       if(!ids[p.mapaDia[d]]) erros.push("mapaDia aponta o dia "+d+" para a ficha "+p.mapaDia[d]+", que não existe");
     });
+    if(p.correcoesUnidade !== undefined){
+      if(!Array.isArray(p.correcoesUnidade)) erros.push("correcoesUnidade deve ser uma lista");
+      else p.correcoesUnidade.forEach(function(c, k){
+        const oc = "correcoesUnidade["+k+"]";
+        if(!c || !/^\d{4}-\d{2}-\d{2}$/.test(String(c.data||""))) erros.push(oc+" precisa de data no formato AAAA-MM-DD");
+        if(!c || typeof c.exercicio !== "string" || !c.exercicio.trim()) erros.push(oc+" sem o nome do exercício");
+        if(!c || UNIDADES.indexOf(c.de) < 0) erros.push(oc+".de deve ser uma unidade conhecida");
+        if(!c || UNIDADES.indexOf(c.para) < 0) erros.push(oc+".para deve ser uma unidade conhecida");
+        ["cargaDe","cargaPara"].forEach(function(kk){ if(c && c[kk] != null && !isFinite(Number(c[kk]))) erros.push(oc+"."+kk+" deve ser número"); });
+      });
+    }
     return erros;
   }
 
@@ -1628,7 +1642,9 @@
   let atual = null;
   let registro = {};
   let trocas = {};
+  let unidades = {};   /* unidade escolhida na sessão, por exercício (id do cartão) */
   let historico = {};
+  let historicoUn = {};   /* série histórica por exercício e por unidade: { id: { unidade: marca } } */
   let ultimaExec = {};        // { exId: 'AAAA-MM-DD' } da última execução, recuo incluído
   let historicoCarregado = false;
   let feitasNaSemana = {};
@@ -1719,24 +1735,47 @@
      duas ou mais, sobe mais de um degrau (teto de três); caiu duas abaixo do
      piso, desce um degrau e recomeça. */
   /* O aviso de falha acompanha qualquer prescrição de trabalho. */
+  /* A SÉRIE HISTÓRICA É DO EXERCÍCIO NA UNIDADE. O alvo parte da última marca
+     anotada na unidade de hoje; marca de outra unidade nunca serve de base, e a
+     referência do programa (ref) só vale na unidade do programa. */
+  function serieDoDia(ex){
+    if(ex.tipo !== "trabalho" || porSegundo(ex)) return historico[ex.id] || null;
+    const s = historicoUn[ex.id];
+    return (s && s[ex.un]) || null;
+  }
+  function refValeHoje(ex){ return !ex.unPrograma || ex.un === ex.unPrograma; }
   function alvoDe(ex){
     const r = alvoBase(ex);
-    const h = historico[ex.id];
+    const h = serieDoDia(ex), hUlt = historico[ex.id];
     if(r && r.porque && ex.tipo === "trabalho" && h && h.rir === "0" && r.porque.indexOf("(RIR 0)") < 0 && !naDeload())
       r.porque += " A última sessão foi até a falha (RIR 0): confira nas Regras se esta fase permite.";
+    if(r && r.porque && ex.tipo === "trabalho" && h && hUlt && h !== hUlt && hUlt.un !== ex.un)
+      r.porque = "Série em " + ex.un + ": a referência é a última marca nessa unidade, de " + dataCurta(h.data) + ", e não a de " + dataCurta(hUlt.data) + ", anotada em " + hUlt.un + ". " + r.porque;
     return r;
   }
   function alvoBase(ex){
-    const h = historico[ex.id];
+    const h = serieDoDia(ex), hUlt = historico[ex.id];
+    const refOk = refValeHoje(ex);
     const base = porSegundo(ex) ? null
-      : (h && h.carga != null ? Number(h.carga) : (ex.ref && ex.ref.c != null ? Number(ex.ref.c) : null));
-    const reps = h && h.reps != null ? Number(h.reps) : (ex.ref && ex.ref.r != null ? Number(ex.ref.r) : null);
+      : (h && h.carga != null ? Number(h.carga) : (refOk && ex.ref && ex.ref.c != null ? Number(ex.ref.c) : null));
+    const reps = h && h.reps != null ? Number(h.reps) : (refOk && ex.ref && ex.ref.r != null ? Number(ex.ref.r) : null);
     const ser = seriesDoDia(ex);
     const sfx = porSegundo(ex) ? " s" : "";
 
     if(ex.tipo === "aquecimento"){
       return { series:ser, carga:base, reps:ex.min, texto: ser+" × "+ex.min+", carga leve",
                porque:"Aquecimento. Não conta volume e não progride por carga." };
+    }
+    /* UNIDADE TROCADA NÃO VIRA BASE. O degrau e o arredondamento seguem a
+       unidade do programa; um número anotado noutra convenção (placas contra
+       kg, kg de cada lado contra kg no total) daria um alvo errado sem aviso. */
+    if(!h && !porSegundo(ex) && ((hUlt && hUlt.carga != null && hUlt.un && hUlt.un !== ex.un) || (!refOk && ex.ref && ex.ref.c != null))){
+      const outra = (hUlt && hUlt.carga != null && hUlt.un && hUlt.un !== ex.un)
+        ? "A última marca deste exercício, " + fmtNum(hUlt.carga) + " " + hUlt.un + " em " + dataCurta(hUlt.data) + ", foi anotada noutra unidade"
+        : "A referência do programa, " + fmtNum(ex.ref.c) + " " + ex.unPrograma + (ex.ref.d ? " em " + ex.ref.d : "") + ", está noutra unidade";
+      return { series:ser, carga:null, reps:ex.min, texto:"Calibrar: "+ser+" × "+ex.min,
+               unidadeTrocada: true,
+               porque: outra + ", e hoje a carga vai em " + ex.un + ", na qual ainda não há marca. As duas não se convertem com segurança, e o Caderno não usa o número de outra unidade como base. Hoje é medição: a carga que sai no piso da faixa com 3 no tanque, anotada em " + ex.un + ". Se era só o nome da unidade que estava errado, repita o mesmo número." };
     }
     if(base == null && reps == null){
       return { series:ser, carga:null, reps:ex.min, texto:"Calibrar: "+ser+" × "+ex.min+sfx,
@@ -1955,10 +1994,10 @@
     body.appendChild(box);
 
     const dl = el("dl","kv");
-    const h = historico[ex.id];
+    const h = serieDoDia(ex) || historico[ex.id];
     dl.appendChild(el("dt",null,"Última"));
     dl.appendChild(el("dd",null, h
-      ? (dataCurta(h.data)+" · "+(h.carga!=null? fmtNum(h.carga)+" "+ex.un+" · ":"")+h.series+"×"+h.reps+(h.rir?" · RIR "+h.rir:""))
+      ? (dataCurta(h.data)+" · "+(h.carga!=null? fmtNum(h.carga)+" "+(h.un || ex.un)+" · ":"")+h.series+"×"+h.reps+(h.rir?" · RIR "+h.rir:""))
       : refTexto(ex)));
     dl.appendChild(el("dt",null,"Faixa"));
     dl.appendChild(el("dd",null, ex.tipo==="aquecimento" ? "2 × 15, carga leve" : ex.min+" a "+ex.max+(porSegundo(ex)?" segundos":" repetições")));
@@ -2012,6 +2051,17 @@
     menos.addEventListener("click", function(){ const v=parseFloat(String(inp.value).replace(",","."))||0; inp.value=fmtNum(Math.max(0, v-passo())); });
     mais.addEventListener("click", function(){ const v=parseFloat(String(inp.value).replace(",","."))||0; inp.value=fmtNum(v+passo()); });
     st.appendChild(menos); st.appendChild(inp); st.appendChild(mais);
+    if(aceitaUnidade(ex)){
+      const bu = el("div","unid");
+      const su = el("select"); su.id = "un-" + ex.id; su.setAttribute("aria-label", "Como a carga é medida neste aparelho");
+      opcoesUnidade(ex).forEach(function(u){ const o = document.createElement("option"); o.value = u; o.textContent = UN_ROTULO[u] || u; su.appendChild(o); });
+      su.value = ex.un;
+      su.addEventListener("change", function(){ mudarUnidade(ex, su.value, inp.value); });
+      bu.appendChild(su);
+      if(!ex.unEscolhida && ex.unPrograma && ex.un !== ex.unPrograma)
+        bu.appendChild(el("div","why","A unidade segue a da última marca; o programa sugere " + ex.unPrograma + ". Confira antes da primeira série."));
+      fCarga.appendChild(bu);
+    }
     fCarga.appendChild(st);
     body.appendChild(fCarga);
 
@@ -2190,8 +2240,8 @@
   /* ================= PERSISTÊNCIA ================= */
 
   function chaveLocal(){ return "cdf:"+hojeISO+":"+(atual?atual.id:"x"); }
-  function salvarLocal(){ lsSet(chaveLocal(), registro); lsSet(chaveLocal()+":trocas", trocas); }
-  function carregarLocal(){ const r = lsGet(chaveLocal()); registro = r && typeof r==="object" ? r : {}; const t = lsGet(chaveLocal()+":trocas"); trocas = t && typeof t==="object" ? t : {}; }
+  function salvarLocal(){ lsSet(chaveLocal(), registro); lsSet(chaveLocal()+":trocas", trocas); lsSet(chaveLocal()+":unidades", unidades); }
+  function carregarLocal(){ const r = lsGet(chaveLocal()); registro = r && typeof r==="object" ? r : {}; const t = lsGet(chaveLocal()+":trocas"); trocas = t && typeof t==="object" ? t : {}; const u = lsGet(chaveLocal()+":unidades"); unidades = u && typeof u==="object" ? u : {}; }
 
   function escolher(id){
     const s = S.find(function(x){ return x.id===id; }) || S[0];
@@ -2223,7 +2273,45 @@
     const alt = (Array.isArray(ex.alternativas) ? ex.alternativas : [])[Number(t.k) - 1];
     return alt ? variante(ex, alt, String(t.k)) : ex;
   }
-  function montarAtual(s){ return Object.assign({}, s, { ex: s.ex.map(aplicarTroca) }); }
+  /* UNIDADE DA CARGA NA SESSÃO. A unidade acompanha a marca: sem escolha do
+     dia, vale a unidade em que a última carga foi anotada; sem histórico, a
+     do programa. Nos aparelhos, o senhor escolhe na hora entre resistência,
+     placas e anilhas (kg de cada lado). Trocar a unidade em relação à última
+     marca leva o alvo a "Calibrar" (guarda em alvoBase), porque um número não
+     se converte sozinho de uma convenção para outra. */
+  const UN_MAQUINA = ["de resistência", "placas", "kg de cada lado"];
+  const UN_ROTULO = { "de resistência": "Resistência (o número do aparelho)", "placas": "Placas (o número do pino)",
+    "kg de cada lado": "Anilhas (kg de cada lado)", "kg": "kg (o número do aparelho, em kg)" };
+  function unidadeDaMarca(id, unProg){
+    const h = historico[id];
+    return (h && h.un && UNIDADES.indexOf(h.un) >= 0) ? h.un : unProg;
+  }
+  function aplicarUnidade(ex){
+    if(ex.tipo !== "trabalho" || porSegundo(ex)) return ex;
+    const esc = unidades[ex.id];
+    const u = (esc && UNIDADES.indexOf(esc) >= 0) ? esc : unidadeDaMarca(ex.id, ex.un);
+    return Object.assign({}, ex, { un: u, unPrograma: ex.un, unEscolhida: !!(esc && UNIDADES.indexOf(esc) >= 0) });
+  }
+  function aceitaUnidade(ex){
+    return ex.tipo === "trabalho" && !porSegundo(ex) && !/~x$/.test(ex.id)
+      && ([ex.un, ex.unPrograma].some(function(u){ return u === "kg" || UN_MAQUINA.indexOf(u) >= 0; }));
+  }
+  function opcoesUnidade(ex){
+    const l = [];
+    [ex.un, ex.unPrograma].forEach(function(u){ if(u && UN_MAQUINA.indexOf(u) < 0 && l.indexOf(u) < 0) l.push(u); });
+    return l.concat(UN_MAQUINA);
+  }
+  async function mudarUnidade(ex, u, cargaDigitada){
+    const padrao = unidadeDaMarca(ex.id, ex.unPrograma || ex.un);
+    if(u === padrao) delete unidades[ex.id]; else unidades[ex.id] = u;
+    salvarLocal();
+    atual = montarAtual(S.find(function(x){ return x.id === atual.id; }));
+    renderCabecalho(); renderLista();
+    abrir(ex.id, true);
+    const inp = document.getElementById("carga-" + ex.id);
+    if(inp && cargaDigitada) inp.value = cargaDigitada;
+  }
+  function montarAtual(s){ return Object.assign({}, s, { ex: s.ex.map(aplicarTroca).map(aplicarUnidade) }); }
   function exOriginal(ex){
     const s = S.find(function(x){ return atual && x.id === atual.id; });
     return (s && s.ex.find(function(e){ return e.id === (ex.origem || ex.id); })) || ex;
@@ -2307,12 +2395,39 @@
     v.sort(function(a, b){ return String(a.data).localeCompare(String(b.data)); });
     lsSet("cdf:execucoes", v);
   }
+  /* CORREÇÃO DE UNIDADE NA LEITURA. Registro anotado antes de uma mudança de
+     convenção (placas contra "de resistência", kg de cada lado contra as duas
+     anilhas somadas) é lido na convenção do programa, conforme a lista
+     correcoesUnidade do próprio programa: data, ficha, exercício, unidade
+     escrita e unidade certa, e, quando preciso, a carga escrita e a certa. O
+     registro guardado não muda; o que estava escrito vai em unOriginal e
+     cargaOriginal, no histórico e no backup. */
+  function normalizarExecucao(b){
+    const cs = (typeof PROGRAMA !== "undefined" && PROGRAMA && Array.isArray(PROGRAMA.correcoesUnidade)) ? PROGRAMA.correcoesUnidade : [];
+    if(!cs.length || !b || !Array.isArray(b.linhas)) return b;
+    const daqui = cs.filter(function(c){ return c && c.data === b.data && (!c.sessao || c.sessao === b.sessao); });
+    if(!daqui.length) return b;
+    let mudou = false;
+    const linhas = b.linhas.map(function(l){
+      if(!l) return l;
+      const cg = parseFloat(String(l.carga == null ? "" : l.carga).replace(",", "."));
+      const c = daqui.find(function(x){
+        return x.exercicio === l.exercicio && x.de === l.un && (x.cargaDe == null || cg === Number(x.cargaDe));
+      });
+      if(!c) return l;
+      mudou = true;
+      const o = Object.assign({}, l, { un: c.para, unOriginal: l.un });
+      if(c.cargaPara != null && isFinite(cg)){ o.carga = String(c.cargaPara).replace(".", ","); o.cargaOriginal = l.carga; }
+      return o;
+    });
+    return mudou ? Object.assign({}, b, { linhas: linhas }) : b;
+  }
   async function listarExecucoes(){
     if(modo === "claude" && db){
       const snap = await db.collection("execucoes").orderBy("data","asc").limit(1000).get();
-      return snap.docs.map(function(d){ return Object.assign({ id: d.id }, d.data() || {}); });
+      return snap.docs.map(function(d){ return normalizarExecucao(Object.assign({ id: d.id }, d.data() || {})); });
     }
-    return lerLocais();
+    return lerLocais().map(normalizarExecucao);
   }
   async function salvarExecucao(id, doc){
     if(modo === "claude" && db){ await db.doc("execucoes/"+id).set(doc); }
@@ -2345,7 +2460,7 @@
   async function carregarHistorico(){
     try{
       const docs = await listarExecucoes();
-      const h = {};
+      const h = {}, hu = {};
       ultimaExec = {};
       const [semIni, semFim] = semanaCorrente();
       feitasNaSemana = {};
@@ -2372,15 +2487,18 @@
           if(typeof b.data === "string" && (!ultimaExec[ex.id] || b.data > ultimaExec[ex.id])) ultimaExec[ex.id] = b.data;
           const ultima = suas[suas.length-1];
           const carga = ultima.carga ? parseFloat(String(ultima.carga).replace(",",".")) : null;
+          const unM = (ultima.un && UNIDADES.indexOf(String(ultima.un)) >= 0) ? String(ultima.un) : ex.un;
           /* RECUO DELIBERADO NÃO VIRA BASE. Registro feito em janela de recuo e
-             ABAIXO da base é ignorado como régua; acima dela, vale. */
+             ABAIXO da base é ignorado como régua; acima dela, vale. A base de
+             comparação é a da MESMA unidade: placas não se comparam com kg. */
           if(recuo && carga != null){
-            const anterior = h[ex.id] && h[ex.id].carga != null
-              ? h[ex.id].carga
-              : (ex.ref && ex.ref.c != null ? Number(ex.ref.c) : null);
+            const su = hu[ex.id] && hu[ex.id][unM];
+            const anterior = su && su.carga != null
+              ? su.carga
+              : (ex.ref && ex.ref.c != null && unM === ex.un ? Number(ex.ref.c) : null);
             if(anterior != null && carga < anterior) return;
           }
-          h[ex.id] = {
+          const reg = {
             data: b.data,
             carga: isFinite(carga) ? carga : null,
             reps: ultima.reps ? parseInt(ultima.reps,10) : null,
@@ -2391,12 +2509,17 @@
               return v.length ? String(Math.min.apply(null, v)) : "";
             })(),
             series: suas.length,
+            un: unM,
             recuo: !!recuo
           };
+          h[ex.id] = reg;
+          (hu[ex.id] = hu[ex.id] || {})[unM] = reg;
         });
       });
       historico = h;
+      historicoUn = hu;
       historicoCarregado = true;
+      if(atual){ const sb = S.find(function(x){ return x.id === atual.id; }); if(sb) atual = montarAtual(sb); }
       renderPicker();
       if(atual){ renderCabecalho(); renderLista(); }
       const nf = Object.keys(feitasNaSemana).length;
@@ -2653,8 +2776,10 @@
       + linhas.map(function(l){ return "| " + l.map(celula).join(" | ") + " |"; }).join("\n") + "\n";
   }
   /* Resume as séries de trabalho de um exercício numa sessão. */
-  /* A unidade que vale é a do programa em uso: o número registrado se lê por ela. */
+  /* A unidade que vale é a gravada na linha, porque o número foi anotado nela;
+     sem unidade gravada, vale a do programa em uso. */
   function unidadeAtual(nome, gravada){
+    if(gravada && UNIDADES.indexOf(gravada) >= 0) return gravada;
     for(const sx of S){ for(const e of sx.ex){ if(e.n === nome || (Array.isArray(e.nomesAntigos) && e.nomesAntigos.indexOf(nome) >= 0)) return e.un; } }
     return gravada || "";
   }
